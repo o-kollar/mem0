@@ -38,10 +38,11 @@
     .dark .shadow-top-lg { box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.1), 0 -5px 8px -6px rgb(0 0 0 / 0.1); }
     .link { stroke: #9ca3af; stroke-width: 1.5px; }
     .dark .link { stroke: #6b7280; }
-    .sticky-note { rx: 5; ry: 5; }
+    .sticky-note { rx: 5; ry: 5; cursor: pointer; }
     .note-label { pointer-events: none; font-size: 12px; text-anchor: middle; dominant-baseline: central; fill: #1f2937; }
     .dark .note-label { fill: #f3f4f6; }
     .graph-host-container {
+        position: relative; /* For positioning the details card */
         height: 350px;
         width: 100%;
         border-radius: 0.5rem;
@@ -50,6 +51,72 @@
         margin-bottom: 1rem;
         transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
         overflow: hidden;
+    }
+    .node-details-card {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 280px;
+        max-height: calc(100% - 20px);
+        background-color: #fff;
+        border: 1px solid #e2e8f0; /* slate-200 */
+        border-radius: 0.375rem; /* rounded-md */
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
+        padding: 1rem; /* p-4 */
+        z-index: 100;
+        display: flex;
+        flex-direction: column;
+    }
+    .dark .node-details-card {
+        background-color: #334155; /* slate-700 */
+        border-color: #475569; /* slate-600 */
+        color: #f1f5f9; /* slate-100 */
+    }
+    .node-details-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.75rem; /* mb-3 */
+        font-size: 0.875rem; /* text-sm */
+        font-weight: 600; /* font-semibold */
+        border-bottom: 1px solid #e2e8f0; /* slate-200 */
+        padding-bottom: 0.5rem; /* pb-2 */
+        color: #1e293b; /* slate-800 */
+    }
+    .dark .node-details-card h3 {
+        border-bottom-color: #475569; /* slate-600 */
+        color: #f1f5f9; /* slate-100 */
+    }
+    .node-details-card-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        font-size: 0.875rem; /* text-sm */
+        line-height: 1.4;
+    }
+     /* Custom scrollbar for card body */
+    .node-details-card-body::-webkit-scrollbar { width: 5px; }
+    .node-details-card-body::-webkit-scrollbar-track { background: transparent; }
+    .node-details-card-body::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 10px; }
+    .dark .node-details-card-body::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
+
+    .node-details-card button.close-btn {
+        position: absolute;
+        top: 0.5rem; /* p-2 */
+        right: 0.5rem; /* p-2 */
+        background: transparent;
+        border: none;
+        font-size: 1.5rem; /* text-2xl-ish */
+        line-height: 1;
+        cursor: pointer;
+        color: #64748b; /* slate-500 */
+        padding: 0.25rem;
+    }
+    .dark .node-details-card button.close-btn {
+        color: #94a3b8; /* slate-400 */
+    }
+    .node-details-card button.close-btn:hover {
+        color: #1e293b; /* slate-800 */
+    }
+    .dark .node-details-card button.close-btn:hover {
+        color: #f1f5f9; /* slate-100 */
     }
   </style>
 </head>
@@ -87,7 +154,7 @@
   </div>
 
   <script type="module">
-    import { createApp, ref, nextTick, watch, onMounted, onUpdated, onBeforeUnmount } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, nextTick, watch, onMounted, onUpdated, onBeforeUnmount, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
     const API_KEY = "AIzaSyCvtMPDKK4oT_-1RB0MBOYoDwPjme6akoY"; // !!! REPLACE WITH YOUR ACTUAL GEMINI API KEY !!!
     const MODEL_NAME = "gemini-2.5-flash-lite-preview-06-17";
@@ -98,80 +165,150 @@
         noteWidth: 120, noteHeight: 70, activeContainerElement: null, resizeObserver: null,
         localStorageKey: 'd3GraphChatUIData',
         isDarkMode: () => document.documentElement.classList.contains('dark'),
+        selectedNodeId: null,
+        selectionCallback: null,
+
 
         loadFromLocalStorage() {
             try {
                 const storedData = localStorage.getItem(this.localStorageKey);
                 if (storedData) {
                     const parsedData = JSON.parse(storedData);
-                    // Basic validation
                     if (parsedData && Array.isArray(parsedData.nodes) && Array.isArray(parsedData.links)) {
                         this.graph = parsedData;
                         console.log("Graph data loaded from localStorage.");
                         return true;
                     } else {
                         console.warn("Invalid graph data structure in localStorage.");
-                        this.graph = { nodes: [], links: [] }; // Reset to default
+                        this.graph = { nodes: [], links: [] };
                     }
                 }
             } catch (error) {
                 console.error("Error loading graph data from localStorage:", error);
-                this.graph = { nodes: [], links: [] }; // Reset to default on error
+                this.graph = { nodes: [], links: [] };
             }
             return false;
         },
-
         saveToLocalStorage() {
-            try {
-                localStorage.setItem(this.localStorageKey, JSON.stringify(this.graph));
-                // console.log("Graph data saved to localStorage.");
-            } catch (error) {
-                console.error("Error saving graph data to localStorage:", error);
-            }
+            try { localStorage.setItem(this.localStorageKey, JSON.stringify(this.graph)); }
+            catch (error) { console.error("Error saving graph data to localStorage:", error); }
         },
-
         init() {
-            this.loadFromLocalStorage(); // Load first
-            // If nothing loaded, graph is already { nodes: [], links: [] } from loadFromLocalStorage or default
+            this.loadFromLocalStorage();
+            this.selectedNodeId = null; 
         },
-        ensureInitialized(containerElement) {
-            if (!containerElement) return;
-            if (this.activeContainerElement === containerElement && this.svg) { /* ... resize check ... */ return; } // Simplified for brevity
-            this.destroyVisualization();
+        ensureInitialized(containerElement, selectionCallback) {
+            if (!containerElement) { console.error("D3: Provided container element is null or undefined."); return; }
+            this.selectionCallback = selectionCallback; 
+
+            if (this.activeContainerElement === containerElement && this.svg) {
+                const newWidth = containerElement.clientWidth; const newHeight = containerElement.clientHeight;
+                if (newWidth > 0 && newHeight > 0) {
+                    const currentViewBox = this.svg.attr("viewBox")?.split(" ").map(Number);
+                    if (!currentViewBox || currentViewBox[2] !== newWidth || currentViewBox[3] !== newHeight) {
+                        this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+                        if (this.simulation) { this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart(); }
+                    }
+                }
+                return;
+            }
+
+            this.destroyVisualization(); 
             this.activeContainerElement = containerElement;
-            const width = containerElement.clientWidth || 600, height = containerElement.clientHeight || 350;
-            this.svg = d3.select(containerElement).append("svg")
-                .attr("width", "100%").attr("height", "100%")
-                .attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
-            this.simulation = d3.forceSimulation(this.graph.nodes) // Use this.graph which might be loaded
-                .force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(150))
-                .force("charge", d3.forceManyBody().strength(-300))
-                .force("center", d3.forceCenter(width / 2, height / 2))
-                .on("tick", this.ticked.bind(this));
+            this.selectionCallback = selectionCallback; 
+
+            const width = containerElement.clientWidth || 600; const height = containerElement.clientHeight || 350;
+            this.svg = d3.select(containerElement).append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet")
+                .on("click", (event) => { 
+                    if (event.target === this.svg.node()) {
+                        this.setSelectedNode(null);
+                    }
+                });
+
+            this.simulation = d3.forceSimulation(this.graph.nodes).force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(150)).force("charge", d3.forceManyBody().strength(-300)).force("center", d3.forceCenter(width / 2, height / 2)).on("tick", this.ticked.bind(this));
             this.svg.append("g").attr("class", "links"); this.svg.append("g").attr("class", "notes"); this.svg.append("g").attr("class", "labels");
-            let rt; const hr = () => { /* ... resize handler ... */ }; // Simplified
-            const dbr = () => { clearTimeout(rt); rt = setTimeout(hr, 150); };
-            this.resizeObserver = new ResizeObserver(dbr); this.resizeObserver.observe(containerElement);
-            if (width > 0 && height > 0) hr();
-            this.update(); // Update with potentially loaded data
+            
+            let resizeTimer;
+            const handleResize = () => { 
+                if (!this.activeContainerElement || !this.svg) return;
+                const newWidth = this.activeContainerElement.clientWidth; const newHeight = this.activeContainerElement.clientHeight;
+                if (newWidth > 0 && newHeight > 0) {
+                    this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+                    this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart();
+                } else { this.svg.attr("viewBox", `0 0 600 350`); this.simulation.force("center", d3.forceCenter(300, 175)).alpha(0.3).restart(); }
+            };
+            const debouncedResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(handleResize, 150); };
+            this.resizeObserver = new ResizeObserver(debouncedResize); this.resizeObserver.observe(containerElement);
+            if (width > 0 && height > 0) handleResize();
+            this.update();
         },
-        destroyVisualization() { /* ... same as before ... */ },
-        ticked() { /* ... same as before ... */ },
+        destroyVisualization() {
+            if (this.resizeObserver && this.activeContainerElement) { this.resizeObserver.unobserve(this.activeContainerElement); this.resizeObserver.disconnect(); this.resizeObserver = null; }
+            if (this.svg) { this.svg.remove(); this.svg = null; }
+            if (this.simulation) { this.simulation.stop(); this.simulation = null; }
+            this.activeContainerElement = null;
+            this.selectionCallback = null; 
+            this.selectedNodeId = null;
+        },
+        ticked() {
+            if (!this.svg || !this.simulation) return;
+            this.svg.selectAll("g.links line").attr("x1", d=>d.source.x).attr("y1", d=>d.source.y).attr("x2", d=>d.target.x).attr("y2", d=>d.target.y);
+            this.svg.selectAll("g.notes rect").attr("x", d=>d.x-this.noteWidth/2).attr("y", d=>d.y-this.noteHeight/2);
+            this.svg.selectAll("g.labels text").attr("x", d=>d.x).attr("y", d=>d.y);
+        },
+        setSelectedNode(nodeId) {
+            if (this.selectedNodeId === nodeId && nodeId !== null) { 
+                this.selectedNodeId = null; 
+            } else {
+                this.selectedNodeId = nodeId;
+            }
+
+            if (this.selectionCallback) {
+                const nodeData = this.selectedNodeId ? this.graph.nodes.find(n => n.id === this.selectedNodeId) : null;
+                this.selectionCallback(nodeData);
+            }
+            this.update(); 
+        },
         update() {
             if (!this.svg || !this.simulation || !this.activeContainerElement) return;
-            this.simulation.nodes(this.graph.nodes); this.simulation.force("link").links(this.graph.links);
-            const df = this.isDarkMode()?"#334155":"#fefce8", ds = this.isDarkMode()?"#64748b":"#facc15";
+            this.simulation.nodes(this.graph.nodes); 
+            this.simulation.force("link").links(this.graph.links); // Ensure links are updated with current graph.links
+            
+            const defaultFill = this.isDarkMode()?"#334155":"#fefce8"; 
+            const defaultStroke = this.isDarkMode()?"#64748b":"#facc15"; 
+            const highlightedFill = this.isDarkMode()?"#60a5fa":"#bfdbfe"; 
+            const highlightedStroke = this.isDarkMode()?"#93c5fd":"#60a5fa"; 
+            const selectedStroke = this.isDarkMode()?"#38bdf8":"#0ea5e9"; 
+
+
             const link = this.svg.select("g.links").selectAll("line").data(this.graph.links, d=>`${d.source.id||d.source}-${d.target.id||d.target}`);
-            link.exit().remove(); link.enter().append("line").attr("class", "link").style("stroke", this.isDarkMode()?"#6b7280":"#9ca3af");
+            link.exit().remove();
+            link.enter().append("line").attr("class", "link").style("stroke", this.isDarkMode()?"#6b7280":"#9ca3af");
+
             const notes = this.svg.select("g.notes").selectAll("rect").data(this.graph.nodes, d=>d.id);
             notes.exit().remove();
-            notes.enter().append("rect").attr("class", "sticky-note").attr("width", this.noteWidth).attr("height", this.noteHeight)
+            notes.enter().append("rect")
+                .attr("class", "sticky-note")
+                .attr("width", this.noteWidth)
+                .attr("height", this.noteHeight)
+                .on("click", (event, d) => {
+                    event.stopPropagation(); 
+                    this.setSelectedNode(d.id);
+                })
                 .call(d3.drag().on("start",this.dragStarted.bind(this)).on("drag",this.dragged.bind(this)).on("end",this.dragEnded.bind(this)))
-                .merge(notes).style("fill",d=>d.isHighlighted?(this.isDarkMode()?"#60a5fa":"#bfdbfe"):df).style("stroke",d=>d.isHighlighted?(this.isDarkMode()?"#93c5fd":"#60a5fa"):ds).style("stroke-width",1.5);
+                .merge(notes)
+                .style("fill", d => d.isHighlighted ? highlightedFill : defaultFill)
+                .style("stroke", d => {
+                    if (d.id === this.selectedNodeId) return selectedStroke;
+                    return d.isHighlighted ? highlightedStroke : defaultStroke;
+                })
+                .style("stroke-width", d => (d.id === this.selectedNodeId) ? 2.5 : 1.5);
+
             const labels = this.svg.select("g.labels").selectAll("text").data(this.graph.nodes, d=>d.id);
             labels.exit().remove();
             labels.enter().append("text").attr("class", "note-label").merge(labels)
                 .text(d=>d.id.length>18?d.id.substring(0,15)+"...":d.id).style("fill", this.isDarkMode()?"#f3f4f6":"#1f2937");
+            
             this.simulation.alpha(0.3).restart();
         },
         dragStarted(ev,d){if(!ev.active&&this.simulation)this.simulation.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;},
@@ -179,59 +316,113 @@
         dragEnded(ev,d){if(!ev.active&&this.simulation)this.simulation.alphaTarget(0);},
         addNode(id,body=""){if(!id||typeof id!=='string'||id.trim()==="")return{success:false,message:"ID empty."};id=id.trim();if(!this.graph.nodes.find(n=>n.id===id)){this.graph.nodes.push({id:id,body:body||"",isHighlighted:false});this.update();this.saveToLocalStorage();return{success:true,message:`Note "${id}" created.`};}return{success:false,message:`Note "${id}" exists.`};},
         addLink(srcId,tgtId){if(!srcId||!tgtId)return{success:false,message:"IDs required."};srcId=srcId.trim();tgtId=tgtId.trim();if(srcId===tgtId)return{success:false,message:"Self-link."};const sn=this.graph.nodes.find(n=>n.id===srcId),tn=this.graph.nodes.find(n=>n.id===tgtId);if(!sn)return{success:false,message:`Src "${srcId}" missing.`};if(!tn)return{success:false,message:`Tgt "${tgtId}" missing.`};const le=this.graph.links.find(l=>(l.source.id===srcId&&l.target.id===tgtId)||(l.source.id===tgtId&&l.target.id===srcId));if(!le){this.graph.links.push({source:srcId,target:tgtId});this.update();this.saveToLocalStorage();return{success:true,message:`Linked "${srcId}"-"${tgtId}".`};}return{success:false,message:`Link exists.`};},
-        deleteNode(id){id=id.trim();const ne=this.graph.nodes.find(n=>n.id===id);if(!ne)return{success:false,message:`Note "${id}" missing.`};this.graph.nodes=this.graph.nodes.filter(n=>n.id!==id);this.graph.links=this.graph.links.filter(l=>(l.source.id||l.source)!==id&&(l.target.id||l.target)!==id);this.update();this.saveToLocalStorage();return{success:true,message:`Note "${id}" deleted.`};},
-        highlightSearch(q){const nq=q?q.trim().toLowerCase():"";this.graph.nodes.forEach(n=>{n.isHighlighted=nq&&(n.id.toLowerCase().includes(nq)||(n.body&&n.body.toLowerCase().includes(nq)))});this.update();return{success:true,message:nq?`Highlight: "${q}".`:"Highlight cleared."};}, // No save for highlight
-        clearGraphData(){this.graph.nodes=[];this.graph.links=[];this.update();this.saveToLocalStorage();return{success:true,message:"Graph data cleared."};}
-    };
-    // Ensure `destroyVisualization`, `ticked`, `drag*` and parts of `ensureInitialized` are fully defined as before...
-    d3GraphManager.destroyVisualization = function() {
-        if (this.resizeObserver && this.activeContainerElement) { this.resizeObserver.unobserve(this.activeContainerElement); this.resizeObserver.disconnect(); this.resizeObserver = null; }
-        if (this.svg) { this.svg.remove(); this.svg = null; }
-        if (this.simulation) { this.simulation.stop(); this.simulation = null; }
-        this.activeContainerElement = null;
-    };
-    d3GraphManager.ticked = function() {
-        if (!this.svg || !this.simulation) return;
-        this.svg.selectAll("g.links line").attr("x1", d=>d.source.x).attr("y1", d=>d.source.y).attr("x2", d=>d.target.x).attr("y2", d=>d.target.y);
-        this.svg.selectAll("g.notes rect").attr("x", d=>d.x-this.noteWidth/2).attr("y", d=>d.y-this.noteHeight/2);
-        this.svg.selectAll("g.labels text").attr("x", d=>d.x).attr("y", d=>d.y);
-    };
-    // ensureInitialized full definition part for resize check and handler
-    const originalEnsureInitialized = d3GraphManager.ensureInitialized;
-    d3GraphManager.ensureInitialized = function(containerElement) {
-        if (!containerElement) { console.error("D3: Provided container element is null or undefined."); return; }
-        if (this.activeContainerElement === containerElement && this.svg) {
-            const newWidth = containerElement.clientWidth; const newHeight = containerElement.clientHeight;
-            if (newWidth > 0 && newHeight > 0) {
-                const currentViewBox = this.svg.attr("viewBox")?.split(" ").map(Number);
-                if (!currentViewBox || currentViewBox[2] !== newWidth || currentViewBox[3] !== newHeight) {
-                    this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
-                    if (this.simulation) { this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart(); }
+        deleteNode(id){
+            id=id.trim();
+            const ne=this.graph.nodes.find(n=>n.id===id);
+            if(!ne)return{success:false,message:`Note "${id}" missing.`};
+            this.graph.nodes=this.graph.nodes.filter(n=>n.id!==id);
+            this.graph.links=this.graph.links.filter(l=>(l.source.id||l.source)!==id&&(l.target.id||l.target)!==id);
+            if (this.selectedNodeId === id) {
+                this.setSelectedNode(null); 
+            }
+            this.update();
+            this.saveToLocalStorage();
+            return{success:true,message:`Note "${id}" deleted.`};
+        },
+        editNode(currentId, newIdParam, newBodyParam) {
+            currentId = currentId ? currentId.trim() : null;
+            const newId = newIdParam ? newIdParam.trim() : null;
+            // newBodyParam can be undefined (no change), empty string (clear body), or content.
+
+            if (!currentId) {
+                return { success: false, message: "Current node ID is required to edit." };
+            }
+
+            const nodeIndex = this.graph.nodes.findIndex(n => n.id === currentId);
+            if (nodeIndex === -1) {
+                return { success: false, message: `Node "${currentId}" not found.` };
+            }
+            const node = this.graph.nodes[nodeIndex]; // Get a direct reference to the node object
+
+            let idChanged = false;
+            let bodyChanged = false;
+            const originalId = node.id; // Store original ID for link updates & selection check
+
+            // Handle ID change
+            if (newId && newId !== originalId) {
+                if (this.graph.nodes.some(n => n.id === newId)) {
+                    return { success: false, message: `Cannot rename to "${newId}": ID already exists.` };
+                }
+                node.id = newId; // Update node's ID directly on the object in the graph
+                idChanged = true;
+
+                // Update string IDs in the links array
+                this.graph.links.forEach(link => {
+                    if (link.source === originalId) {
+                        link.source = newId;
+                    }
+                    if (link.target === originalId) {
+                        link.target = newId;
+                    }
+                });
+            }
+
+            // Handle body change
+            // typeof newBodyParam === 'string' means an explicit value for body was passed by the LLM.
+            // This includes "" (empty string) to clear the body.
+            // If newBodyParam is undefined (LLM didn't include it), body is not changed.
+            if (typeof newBodyParam === 'string') {
+                if (node.body !== newBodyParam) {
+                    node.body = newBodyParam;
+                    bodyChanged = true;
                 }
             }
-            return;
-        }
-        this.destroyVisualization();
-        this.activeContainerElement = containerElement;
-        const width = containerElement.clientWidth || 600; const height = containerElement.clientHeight || 350;
-        this.svg = d3.select(containerElement).append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
-        this.simulation = d3.forceSimulation(this.graph.nodes).force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(150)).force("charge", d3.forceManyBody().strength(-300)).force("center", d3.forceCenter(width / 2, height / 2)).on("tick", this.ticked.bind(this));
-        this.svg.append("g").attr("class", "links"); this.svg.append("g").attr("class", "notes"); this.svg.append("g").attr("class", "labels");
-        let resizeTimer;
-        const handleResize = () => {
-            if (!this.activeContainerElement || !this.svg) return;
-            const newWidth = this.activeContainerElement.clientWidth; const newHeight = this.activeContainerElement.clientHeight;
-            if (newWidth > 0 && newHeight > 0) {
-                this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
-                this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart();
-            } else { this.svg.attr("viewBox", `0 0 600 350`); this.simulation.force("center", d3.forceCenter(300, 175)).alpha(0.3).restart(); }
-        };
-        const debouncedResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(handleResize, 150); };
-        this.resizeObserver = new ResizeObserver(debouncedResize); this.resizeObserver.observe(containerElement);
-        if (width > 0 && height > 0) handleResize();
-        this.update();
-    };
 
+            if (!idChanged && !bodyChanged) {
+                return { success: true, message: `Node "${originalId}" was not changed (no new ID or body provided, or values were the same).` };
+            }
+            
+            this.update(); // Re-render D3. This will use the updated node.id and new link string IDs.
+                        // Simulation will be updated with new node IDs and link string IDs.
+            this.saveToLocalStorage();
+
+            // If the currently selected node was the one edited:
+            if (this.selectedNodeId === originalId) {
+                if (idChanged) {
+                    this.selectedNodeId = newId; // Update the manager's tracked selected ID
+                }
+                // Whether ID changed or just body, if it was selected, notify the callback with the *updated* node object
+                if (this.selectionCallback) {
+                    // Find the node again by its (potentially new) ID to ensure we pass the latest reference from the graph array
+                    const updatedNodeForCallback = this.graph.nodes.find(n => n.id === this.selectedNodeId);
+                    this.selectionCallback(updatedNodeForCallback); 
+                }
+            } else if (this.selectedNodeId === newId && idChanged) { 
+                // This case handles if some other node was selected, but its ID happened to be the `newId`
+                // we just renamed a node *to*. Unlikely, but good to ensure selection card shows the *correct* node.
+                 if (this.selectionCallback) {
+                    const selectedNodeForCallback = this.graph.nodes.find(n => n.id === this.selectedNodeId);
+                    this.selectionCallback(selectedNodeForCallback); 
+                }
+            }
+
+
+            let message = `Node "${originalId}" updated.`;
+            if (idChanged && newId) message += ` Renamed to "${newId}".`;
+            if (bodyChanged) message += ` Body content ${newBodyParam === "" ? "cleared" : "updated"}.`;
+            
+            return { success: true, message: message.trim() };
+        },
+        highlightSearch(q){const nq=q?q.trim().toLowerCase():"";this.graph.nodes.forEach(n=>{n.isHighlighted=nq&&(n.id.toLowerCase().includes(nq)||(n.body&&n.body.toLowerCase().includes(nq)))});this.update();return{success:true,message:nq?`Highlight: "${q}".`:"Highlight cleared."};},
+        clearGraphData(){
+            this.graph.nodes=[];
+            this.graph.links=[];
+            this.setSelectedNode(null); 
+            this.update();
+            this.saveToLocalStorage();
+            return{success:true,message:"Graph data cleared."};
+        }
+    };
 
     const MessageItem = {
       props: ['message'], emits: ['edit', 'copy'],
@@ -239,6 +430,28 @@
         const contentRef = ref(null), parsedContent = ref(''), isUser = props.message.role === 'user';
         const graphHostElement = ref(null), isDarkMode = ref(d3GraphManager.isDarkMode());
         let darkModeObserver = null;
+
+        const selectedRawNode = ref(null);
+
+        const handleNodeSelectionChange = (nodeData) => {
+            selectedRawNode.value = nodeData;
+        };
+
+        const displayedNodeDetails = computed(() => {
+            if (selectedRawNode.value && selectedRawNode.value.body && selectedRawNode.value.body.trim() !== '') {
+                return {
+                    id: selectedRawNode.value.id,
+                    parsedBody: marked.parse(selectedRawNode.value.body)
+                };
+            }
+            return null;
+        });
+
+        const closeNodeCard = () => {
+            if (props.message.isGraphDisplaySlot && d3GraphManager.activeContainerElement === graphHostElement.value) {
+                d3GraphManager.setSelectedNode(null); 
+            }
+        };
 
         const updateContentAndRenderMath = (text) => {
           if (props.message.isGraphDisplaySlot) { parsedContent.value = ''; return; }
@@ -249,35 +462,79 @@
             if (contentRef.value && !props.message.isError && (props.message.role==='model' || (text&&text.includes('$')))) {
               try { if (typeof renderMathInElement === 'function') renderMathInElement(contentRef.value, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false}); } catch (e) { console.warn("KaTeX:", e); }
             }
+            if (props.message.isGraphDisplaySlot && displayedNodeDetails.value && contentRef.value?.querySelector('.node-details-card-body')) {
+                // If KaTeX is needed inside the node card, render it here too.
+                // For now, assuming standard Markdown is enough for the card.
+            }
           });
         };
         watch(() => props.message.parts[0].text, (nt) => { if (!props.message.isGraphDisplaySlot) updateContentAndRenderMath(nt); }, { immediate: true });
         watch(() => props.message.isStreaming, (is,was) => { if (was&&!is&&!props.message.isGraphDisplaySlot) updateContentAndRenderMath(props.message.parts[0].text); });
+        
+        // Watch for changes in selectedRawNode to re-render KaTeX if node body changes while selected
+        watch(selectedRawNode, (newNodeData) => {
+            if (newNodeData && newNodeData.body && graphHostElement.value) {
+                nextTick(() => {
+                    const cardBody = graphHostElement.value.querySelector('.node-details-card-body');
+                    if (cardBody && typeof renderMathInElement === 'function' && newNodeData.body.includes('$')) {
+                         try { renderMathInElement(cardBody, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false}); } catch (e) { console.warn("KaTeX in card:", e); }
+                    }
+                });
+            }
+        }, { deep: true });
+
+
         const handleEdit = () => emit('edit', props.message), handleCopy = () => emit('copy', props.message);
 
         const setupGraphObserver = () => {
             const obs = new MutationObserver((ml) => {
                 for (const m of ml) if (m.type === 'attributes' && m.attributeName === 'class') {
                     const newIsDark = d3GraphManager.isDarkMode();
-                    if (isDarkMode.value !== newIsDark) { isDarkMode.value = newIsDark; if (d3GraphManager.svg) d3GraphManager.update(); }
+                    if (isDarkMode.value !== newIsDark) {
+                        isDarkMode.value = newIsDark;
+                        if (props.message.isGraphDisplaySlot && d3GraphManager.activeContainerElement === graphHostElement.value && d3GraphManager.svg) {
+                             d3GraphManager.update();
+                        }
+                    }
                 }
             });
             obs.observe(document.documentElement, { attributes: true });
             return obs;
         };
-        onMounted(() => { if (props.message.isGraphDisplaySlot && graphHostElement.value) { d3GraphManager.ensureInitialized(graphHostElement.value); darkModeObserver = setupGraphObserver(); } });
-        onUpdated(() => { if (props.message.isGraphDisplaySlot && graphHostElement.value) { d3GraphManager.ensureInitialized(graphHostElement.value); if(!darkModeObserver) darkModeObserver = setupGraphObserver(); } else if (!props.message.isGraphDisplaySlot && darkModeObserver) { darkModeObserver.disconnect(); darkModeObserver = null; } });
+        onMounted(() => {
+            if (props.message.isGraphDisplaySlot && graphHostElement.value) {
+                d3GraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange);
+                darkModeObserver = setupGraphObserver();
+            }
+        });
+        onUpdated(() => { // ensureInitialized might be called multiple times if component updates for other reasons
+            if (props.message.isGraphDisplaySlot && graphHostElement.value) {
+                 // Pass the callback every time, ensureInitialized handles if it's the same container
+                d3GraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange);
+                if(!darkModeObserver) darkModeObserver = setupGraphObserver();
+            } else if (!props.message.isGraphDisplaySlot && darkModeObserver) {
+                darkModeObserver.disconnect(); darkModeObserver = null;
+            }
+        });
         onBeforeUnmount(() => {
             if (darkModeObserver) { darkModeObserver.disconnect(); darkModeObserver = null; }
             if (props.message.isGraphDisplaySlot && graphHostElement.value && d3GraphManager.activeContainerElement === graphHostElement.value) {
-                d3GraphManager.destroyVisualization();
+                d3GraphManager.destroyVisualization(); // This will clear the callback in d3Manager
+                 selectedRawNode.value = null; 
             }
         });
-        return { isUser, handleEdit, handleCopy, contentRef, parsedContent, message: props.message, graphHostElement, isDarkMode };
+        return { isUser, handleEdit, handleCopy, contentRef, parsedContent, message: props.message, graphHostElement, isDarkMode, displayedNodeDetails, closeNodeCard };
       },
       template: `
         <div v-if="message.isGraphDisplaySlot" class="w-full my-3">
-            <div ref="graphHostElement" class="graph-host-container" :class="isDarkMode ? 'bg-slate-800' : 'bg-slate-50'"></div>
+            <div ref="graphHostElement" class="graph-host-container" :class="isDarkMode ? 'bg-slate-800' : 'bg-slate-50'">
+                <!-- Node Details Card -->
+                <div v-if="displayedNodeDetails" class="node-details-card" :class="{ 'dark': isDarkMode }">
+                    <h3>{{ displayedNodeDetails.id }}</h3>
+                    <div class="node-details-card-body prose prose-sm dark:prose-invert max-w-none" v-html="displayedNodeDetails.parsedBody"></div>
+                    <button @click="closeNodeCard" class="close-btn" title="Close note details">×</button>
+                </div>
+            </div>
         </div>
         <div v-else :class="['w-full flex group relative', isUser ? 'justify-end' : 'justify-start']" :data-message-id="message.id">
           <div :class="['max-w-[85%] sm:max-w-[80%]']">
@@ -292,7 +549,6 @@
       `
     };
 
-
     createApp({
       components: { MessageItem },
       setup() {
@@ -303,28 +559,53 @@
 
         const geminiTools = [{ functionDeclarations: []}];
         geminiTools[0].functionDeclarations = [
-            {name:"create_note",description:"New note.",parameters:{type:"OBJECT",properties:{node_id:{type:"STRING",description:"Title."},node_body:{type:"STRING",description:"Body."}},required:["node_id"]}},
-            {name:"connect_notes",description:"Connect notes.",parameters:{type:"OBJECT",properties:{source_id:{type:"STRING"},target_id:{type:"STRING"}},required:["source_id","target_id"]}},
-            {name:"delete_note",description:"Delete note.",parameters:{type:"OBJECT",properties:{node_id:{type:"STRING"}},required:["node_id"]}},
-            {name:"search_notes",description:"Highlight notes.",parameters:{type:"OBJECT",properties:{query:{type:"STRING"}},required:["query"]}},
-            {name:"clear_graph",description:"Clear all.",parameters:{type:"OBJECT",properties:{}}},
-            {name:"list_notes",description:"List all.",parameters:{type:"OBJECT",properties:{}}}
+            {
+                name:"create_note",
+                description:"Creates a new note with a given ID (title) and an optional body. The body should be formatted as Markdown.",
+                parameters:{
+                    type:"OBJECT",
+                    properties:{
+                        node_id:{type:"STRING",description:"A unique identifier or title for the note."},
+                        node_body:{type:"STRING",description:"The content/details for the note, formatted as Markdown. This field is optional. Provide an empty string to create a note with no body."}
+                    },
+                    required:["node_id"]
+                }
+            },
+            {
+                name:"edit_note",
+                description:"Edits an existing note. Allows changing the note's ID (title) and/or its body content. If optional parameters (new_node_id, new_node_body) are not provided, the respective parts of the note remain unchanged. Providing an empty string for new_node_body will clear the note's body.",
+                parameters: {
+                    type: "OBJECT",
+                    properties: {
+                        node_id: {type: "STRING", description: "The current ID (title) of the note to be edited."},
+                        new_node_id: {type: "STRING", description: "Optional. The new ID (title) for the note. If different from current, the note will be renamed."},
+                        new_node_body: {type: "STRING", description: "Optional. The new Markdown content for the note's body. If provided, replaces the existing body. An empty string clears the body."}
+                    },
+                    required: ["node_id"]
+                }
+            },
+            {name:"connect_notes",description:"Connect notes by their IDs.",parameters:{type:"OBJECT",properties:{source_id:{type:"STRING", description: "ID of the source note."},target_id:{type:"STRING", description: "ID of the target note."}},required:["source_id","target_id"]}},
+            {name:"delete_note",description:"Delete a note by its ID.",parameters:{type:"OBJECT",properties:{node_id:{type:"STRING", description: "ID of the note to delete."}},required:["node_id"]}},
+            {name:"search_notes",description:"Highlight notes based on a query string. The query will search note IDs and their Markdown content.",parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}},
+            {name:"clear_graph",description:"Clear all notes and links from the graph.",parameters:{type:"OBJECT",properties:{}}},
+            {name:"list_notes",description:"List all notes currently in the graph, including their IDs and Markdown body content.",parameters:{type:"OBJECT",properties:{}}}
         ];
 
-        const isGraphTool=(name)=>["create_note","connect_notes","delete_note","search_notes","clear_graph","list_notes"].includes(name);
+        const isGraphTool=(name)=>["create_note","edit_note","connect_notes","delete_note","search_notes","clear_graph","list_notes"].includes(name);
 
         const handleGraphFunctionCall = (functionName, args) => {
             let result;
             switch (functionName) {
                 case "create_note": result = d3GraphManager.addNode(args.node_id, args.node_body); break;
+                case "edit_note": result = d3GraphManager.editNode(args.node_id, args.new_node_id, args.new_node_body); break;
                 case "connect_notes": result = d3GraphManager.addLink(args.source_id, args.target_id); break;
                 case "delete_note": result = d3GraphManager.deleteNode(args.node_id); break;
                 case "search_notes": result = d3GraphManager.highlightSearch(args.query); break;
                 case "clear_graph": result = d3GraphManager.clearGraphData(); break;
                 case "list_notes":
                     const notes = d3GraphManager.graph.nodes.map(n => ({ id: n.id, body: n.body }));
-                    const summary = notes.length > 0 ? notes.map(n => `"${n.id}"${n.body?' (content)':' '}`).join(', ') : 'None.';
-                    result = { success: true, message: `Notes: ${summary}. Details to AI.`, data: notes };
+                    const summary = notes.length > 0 ? notes.map(n => `"${n.id}"${n.body && n.body.trim() !== ''?' (has content)':' (no content)'}`).join(', ') : 'No notes exist.';
+                    result = { success: true, message: `Current notes: ${summary}. Full details (including Markdown body) provided to AI.`, data: notes };
                     break;
                 default: result = { success: false, message: `Unknown fn: ${functionName}` };
             }
@@ -349,7 +630,6 @@
             return result;
         };
 
-        // Full function definitions (Corrected: Changed from assignments to const declarations)
         const autoGrowTextarea=(ev)=>{const el=ev.target;el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight,128)}px`;};
         const scrollToBottom=(force=false)=>{nextTick(()=>{if(chatContainerRef.value){const{scrollTop,scrollHeight,clientHeight}=chatContainerRef.value;if(force||scrollHeight-scrollTop-clientHeight<150)chatContainerRef.value.scrollTop=scrollHeight;}});};
         const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false)=>{const exIdx=id?messages.value.findIndex(m=>m.id===id):-1;const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,timestamp:Date.now()};if(exIdx>-1)messages.value.splice(exIdx,1,msgData);else messages.value.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot);return msgData.id;};
@@ -359,18 +639,13 @@
         const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
         const clearInput=()=>{newMessageText.value='';editingMessage.value=null;const ta=document.getElementById('message-input');if(ta){ta.style.height='auto';ta.focus();}};
 
-
         onMounted(() => {
-            d3GraphManager.init(); // This now loads from localStorage
-
-            // Check if graph data was loaded and show it temporarily
+            d3GraphManager.init();
             if (d3GraphManager.graph.nodes.length > 0 || d3GraphManager.graph.links.length > 0) {
                 addOrUpdateMessage('system', "Loaded existing graph from previous session.", null, false, false, "[System: Graph Loaded from Storage]", true);
-
                 const initialGraphSlotId = 'graph-slot-initial-load-' + Date.now();
                 addOrUpdateMessage('system', '', initialGraphSlotId, false, false, '', false, true);
                 activeTempGraphSlotId.value = initialGraphSlotId;
-
                 setTimeout(() => {
                     if (activeTempGraphSlotId.value === initialGraphSlotId) {
                         const index = messages.value.findIndex(m => m.id === initialGraphSlotId && m.isGraphDisplaySlot);
@@ -379,8 +654,8 @@
                     }
                 }, GRAPH_DISPLAY_DURATION);
             }
-
-            addOrUpdateMessage('model', "Hello! Your graph data is saved locally. Graph operations will show a temporary graph display. Try 'List notes' or 'Create a new note'.", null, false, false, "Hello! Your graph data is saved locally. Graph operations will show a temporary graph display. Try 'List notes' or 'Create a new note'.");
+            const welcomeMessage = "Hello! Click a note to see its details. You can create, edit, link, search, and delete notes. Try 'List notes', 'Create note \"My Idea\" with body \"- Point 1\\n- Point 2\"', or 'Edit note \"My Idea\" and change its body to \"Updated content.\"'."
+            addOrUpdateMessage('model', welcomeMessage, null, false, false, welcomeMessage);
         });
 
         return { messages, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, clearInput, chatContainerRef, editingMessage, autoGrowTextarea };
