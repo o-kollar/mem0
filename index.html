@@ -209,9 +209,9 @@
                     if (this.simulation) { this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart(); }
                 }
             }
-            return; 
+            return;
         }
-        this.destroyVisualization(); 
+        this.destroyVisualization();
         this.activeContainerElement = containerElement;
         const width = containerElement.clientWidth || 600; const height = containerElement.clientHeight || 350;
         this.svg = d3.select(containerElement).append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
@@ -233,7 +233,7 @@
     };
 
 
-    const MessageItem = { /* ... same as before (no changes needed here for localStorage) ... */
+    const MessageItem = {
       props: ['message'], emits: ['edit', 'copy'],
       setup(props, { emit }) {
         const contentRef = ref(null), parsedContent = ref(''), isUser = props.message.role === 'user';
@@ -301,8 +301,7 @@
         const activeTempGraphSlotId = ref(null);
         const GRAPH_DISPLAY_DURATION = 7000;
 
-        const geminiTools = [{ functionDeclarations: [ /* ... same tools ... */ ]}];
-        // Minified geminiTools for brevity
+        const geminiTools = [{ functionDeclarations: []}];
         geminiTools[0].functionDeclarations = [
             {name:"create_note",description:"New note.",parameters:{type:"OBJECT",properties:{node_id:{type:"STRING",description:"Title."},node_body:{type:"STRING",description:"Body."}},required:["node_id"]}},
             {name:"connect_notes",description:"Connect notes.",parameters:{type:"OBJECT",properties:{source_id:{type:"STRING"},target_id:{type:"STRING"}},required:["source_id","target_id"]}},
@@ -312,15 +311,11 @@
             {name:"list_notes",description:"List all.",parameters:{type:"OBJECT",properties:{}}}
         ];
 
-
-        const autoGrowTextarea=(ev)=>{ /* ... same ... */ };
-        const scrollToBottom=(force=false)=>{ /* ... same ... */ };
-        const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false)=>{ /* ... same ... */ };
         const isGraphTool=(name)=>["create_note","connect_notes","delete_note","search_notes","clear_graph","list_notes"].includes(name);
 
         const handleGraphFunctionCall = (functionName, args) => {
             let result;
-            switch (functionName) { /* ... same cases, d3GraphManager methods now handle saveToLocalStorage ... */
+            switch (functionName) {
                 case "create_note": result = d3GraphManager.addNode(args.node_id, args.node_body); break;
                 case "connect_notes": result = d3GraphManager.addLink(args.source_id, args.target_id); break;
                 case "delete_note": result = d3GraphManager.deleteNode(args.node_id); break;
@@ -330,7 +325,7 @@
                     const notes = d3GraphManager.graph.nodes.map(n => ({ id: n.id, body: n.body }));
                     const summary = notes.length > 0 ? notes.map(n => `"${n.id}"${n.body?' (content)':' '}`).join(', ') : 'None.';
                     result = { success: true, message: `Notes: ${summary}. Details to AI.`, data: notes };
-                    break; // list_notes doesn't modify data, so no save needed inside it.
+                    break;
                 default: result = { success: false, message: `Unknown fn: ${functionName}` };
             }
 
@@ -338,7 +333,7 @@
                 if (activeTempGraphSlotId.value) {
                     const oldSlotIndex = messages.value.findIndex(m => m.id === activeTempGraphSlotId.value && m.isGraphDisplaySlot);
                     if (oldSlotIndex > -1) messages.value.splice(oldSlotIndex, 1);
-                    activeTempGraphSlotId.value = null; 
+                    activeTempGraphSlotId.value = null;
                 }
                 const newTempGraphSlotId = 'graph-slot-' + Date.now();
                 addOrUpdateMessage('system', '', newTempGraphSlotId, false, false, '', false, true);
@@ -354,20 +349,15 @@
             return result;
         };
 
-        const handleSendMessage=async()=>{ /* ... same ... */ };
-        const fetchBotResponse=async(chatHist)=>{ /* ... same ... */ };
-        const startEdit=(msg)=>{ /* ... same ... */ };
-        const performCopy=(msg)=>{ /* ... same ... */ };
-        const clearInput=()=>{ /* ... same ... */ };
-        // Minified functions for brevity
-        autoGrowTextarea=(ev)=>{const el=ev.target;el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight,128)}px`;};
-        scrollToBottom=(force=false)=>{nextTick(()=>{if(chatContainerRef.value){const{scrollTop,scrollHeight,clientHeight}=chatContainerRef.value;if(force||scrollHeight-scrollTop-clientHeight<150)chatContainerRef.value.scrollTop=scrollHeight;}});};
-        addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false)=>{const exIdx=id?messages.value.findIndex(m=>m.id===id):-1;const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,timestamp:Date.now()};if(exIdx>-1)messages.value.splice(exIdx,1,msgData);else messages.value.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot);return msgData.id;};
-        handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('message-input');if(editingMessage.value){const idx=messages.value.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){messages.value[idx].parts[0].text=txt;messages.value[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{addOrUpdateMessage('user',txt,null,false,false,txt);const hist=messages.value.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot).map(m=>({role:m.role,parts:m.role==='tool'?m.parts:[{text:m.originalMarkdown}]}));await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
-        fetchBotResponse=async(chatHist)=>{const botMsgId=addOrUpdateMessage('model','',null,true);isLoading.value=true;const payload={contents:chatHist,tools:geminiTools,};try{const resp=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const msgIdx=messages.value.findIndex(m=>m.id===botMsgId);if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;messages.value[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){messages.value[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const parts=data.candidates[0].content.parts;let textResp="",funcCall=null;for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall){funcCall=p.functionCall;break;}}if(funcCall){messages.value[msgIdx].isStreaming=false;messages.value[msgIdx].parts[0].text=`<i>Tool: ${funcCall.name}...</i>`;messages.value[msgIdx].originalMarkdown=`[Tool: ${funcCall.name}]`;const funcRes=handleGraphFunctionCall(funcCall.name,funcCall.args);addOrUpdateMessage('system',`<b>Tool: ${funcCall.name}</b><br/>${funcRes.message.replace(/\n/g,'<br>')}`,null,false,!funcRes.success,`[Res: ${funcRes.message}]`,true);const newHist=[...chatHist,{role:'model',parts:[{functionCall:funcCall}]},{role:'tool',parts:[{functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:funcRes}}}]}];await fetchBotResponse(newHist);}else if(textResp.trim()!==""){messages.value[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];messages.value[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);messages.value[msgIdx].parts[0].text=textResp;messages.value[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false;}},15);}else if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";messages.value[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}else{messages.value[msgIdx].parts[0].text=`<p>Info:</p><p>Empty AI response.</p>`;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=messages.value.findIndex(m=>m.id===botMsgId);if(mIdx>-1){messages.value[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;messages.value[mIdx].isError=true;messages.value[mIdx].isStreaming=false;}isLoading.value=false;}finally{const fIdx=messages.value.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&messages.value[fIdx].isStreaming){if(messages.value[fIdx].parts[0].text===''&&!messages.value[fIdx].isError)messages.value[fIdx].parts[0].text='<p>[Stream Error]</p>';messages.value[fIdx].isStreaming=false;}if(!messages.value.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
-        startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('message-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
-        performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
-        clearInput=()=>{newMessageText.value='';editingMessage.value=null;const ta=document.getElementById('message-input');if(ta){ta.style.height='auto';ta.focus();}};
+        // Full function definitions (Corrected: Changed from assignments to const declarations)
+        const autoGrowTextarea=(ev)=>{const el=ev.target;el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight,128)}px`;};
+        const scrollToBottom=(force=false)=>{nextTick(()=>{if(chatContainerRef.value){const{scrollTop,scrollHeight,clientHeight}=chatContainerRef.value;if(force||scrollHeight-scrollTop-clientHeight<150)chatContainerRef.value.scrollTop=scrollHeight;}});};
+        const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false)=>{const exIdx=id?messages.value.findIndex(m=>m.id===id):-1;const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,timestamp:Date.now()};if(exIdx>-1)messages.value.splice(exIdx,1,msgData);else messages.value.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot);return msgData.id;};
+        const handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('message-input');if(editingMessage.value){const idx=messages.value.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){messages.value[idx].parts[0].text=txt;messages.value[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{addOrUpdateMessage('user',txt,null,false,false,txt);const hist=messages.value.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot).map(m=>({role:m.role,parts:m.role==='tool'?m.parts:[{text:m.originalMarkdown}]}));await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
+        const fetchBotResponse=async(chatHist)=>{const botMsgId=addOrUpdateMessage('model','',null,true);isLoading.value=true;const payload={contents:chatHist,tools:geminiTools,};try{const resp=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const msgIdx=messages.value.findIndex(m=>m.id===botMsgId);if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;messages.value[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){messages.value[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const parts=data.candidates[0].content.parts;let textResp="",funcCall=null;for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall){funcCall=p.functionCall;break;}}if(funcCall){messages.value[msgIdx].isStreaming=false;messages.value[msgIdx].parts[0].text=`<i>Tool: ${funcCall.name}...</i>`;messages.value[msgIdx].originalMarkdown=`[Tool: ${funcCall.name}]`;const funcRes=handleGraphFunctionCall(funcCall.name,funcCall.args);addOrUpdateMessage('system',`<b>Tool: ${funcCall.name}</b><br/>${funcRes.message.replace(/\n/g,'<br>')}`,null,false,!funcRes.success,`[Res: ${funcRes.message}]`,true);const newHist=[...chatHist,{role:'model',parts:[{functionCall:funcCall}]},{role:'tool',parts:[{functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:funcRes}}}]}];await fetchBotResponse(newHist);}else if(textResp.trim()!==""){messages.value[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];messages.value[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);messages.value[msgIdx].parts[0].text=textResp;messages.value[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false;}},15);}else if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";messages.value[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}else{messages.value[msgIdx].parts[0].text=`<p>Info:</p><p>Empty AI response.</p>`;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=messages.value.findIndex(m=>m.id===botMsgId);if(mIdx>-1){messages.value[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;messages.value[mIdx].isError=true;messages.value[mIdx].isStreaming=false;}isLoading.value=false;}finally{const fIdx=messages.value.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&messages.value[fIdx].isStreaming){if(messages.value[fIdx].parts[0].text===''&&!messages.value[fIdx].isError)messages.value[fIdx].parts[0].text='<p>[Stream Error]</p>';messages.value[fIdx].isStreaming=false;}if(!messages.value.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
+        const startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('message-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
+        const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
+        const clearInput=()=>{newMessageText.value='';editingMessage.value=null;const ta=document.getElementById('message-input');if(ta){ta.style.height='auto';ta.focus();}};
 
 
         onMounted(() => {
@@ -380,9 +370,6 @@
                 const initialGraphSlotId = 'graph-slot-initial-load-' + Date.now();
                 addOrUpdateMessage('system', '', initialGraphSlotId, false, false, '', false, true);
                 activeTempGraphSlotId.value = initialGraphSlotId;
-
-                // MessageItem for initialGraphSlotId will call ensureInitialized, which calls update()
-                // using the loaded d3GraphManager.graph data.
 
                 setTimeout(() => {
                     if (activeTempGraphSlotId.value === initialGraphSlotId) {
