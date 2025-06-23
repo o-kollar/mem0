@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vue.js Tailwind Canvas Chat UI - Smoke Glass</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+    crossorigin="anonymous"
+  ></script>
+  <style>
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .animate-blink {
+      animation: blink 1s step-end infinite;
+    }
+    .rendered-content { 
+        display: inline-block; 
+        width: 100%;
+    }
+    .typing-cursor {
+      display: inline-block;
+      width: 2px; 
+      height: 1.2em; 
+      background-color: currentcolor;
+      vertical-align: text-bottom; 
+      margin-left: 1px;
+    }
+    .katex-display > .katex {
+        text-align: initial;
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+    }
+    #chat-container::-webkit-scrollbar {
+        width: 6px;
+    }
+    #chat-container::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+    #chat-container::-webkit-scrollbar-thumb {
+        background-color: rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+    .dark #chat-container::-webkit-scrollbar-thumb {
+        background-color: rgba(255,255,255,0.1);
+    }
+    #chat-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(0,0,0,0.2);
+    }
+    .dark #chat-container::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255,255,255,0.2);
+    }
+    .shadow-top-lg {
+        box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.05), 0 -5px 8px -6px rgb(0 0 0 / 0.05);
+    }
+    .dark .shadow-top-lg {
+        box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.1), 0 -5px 8px -6px rgb(0 0 0 / 0.1);
+    }
+  </style>
+</head>
+<body class="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased">
+
+  <div id="app" class="flex flex-col h-full">
+    <!-- Chat Container - The "Canvas" -->
+    <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
+      <message-item 
+        v-for="msg in messages"
+        :key="msg.id"
+        :message="msg"
+        @edit="startEdit"
+        @copy="performCopy"
+      ></message-item>
+    </div>
+
+    <!-- Input Form - Smoke Glass -->
+    <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-gray-700/50 dark:bg-black/60 backdrop-blur-xl border-t border-gray-500/20 dark:border-slate-700/30 shadow-top-lg">
+      <div class="relative flex items-center space-x-2">
+        <textarea
+          id="message-input"
+          rows="1" 
+          v-model="newMessageText"
+          @keydown.enter.exact.prevent="handleSendMessage"
+          @input="autoGrowTextarea"
+          class="flex-grow resize-none border border-gray-600/30 dark:border-slate-700/40 rounded-xl 
+                 focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500/80 
+                 sm:text-sm 
+                 bg-gray-800/20 dark:bg-black/40 backdrop-blur-sm 
+                 text-slate-800 dark:text-slate-100 
+                 py-2.5 px-3.5 
+                 placeholder-gray-500 dark:placeholder-slate-500
+                 overflow-y-hidden max-h-32" 
+                 style="line-height: 1.5rem;"
+          placeholder="Type your message..."
+          :disabled="isLoading"
+        ></textarea>
+        <button
+            type="button"
+            @click="clearInput"
+            :disabled="isLoading"
+            title="Clear input"
+            class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-gray-400 dark:text-slate-500 hover:bg-gray-600/30 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-1 focus:ring-gray-500/50 dark:focus:ring-slate-600 disabled:opacity-50 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75L14.25 12m0 0L12 14.25m2.25-2.25L14.25 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </button>
+        <button
+            type="submit"
+            :disabled="isLoading || !newMessageText.trim() && !editingMessage"
+            class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 focus:ring-2 focus:outline-none focus:ring-sky-400 dark:focus:ring-sky-600 disabled:bg-sky-500/60 disabled:cursor-not-allowed transition-colors"
+            title="Send message"
+          >
+            <span v-if="isLoading">
+                <svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-sky-200 dark:fill-sky-700" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                </svg>
+            </span>
+            <span v-else>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                </svg>
+            </span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <script type="module">
+    import { createApp, ref, nextTick, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+
+    const API_KEY = "AIzaSyCvtMPDKK4oT_-1RB0MBOYoDwPjme6akoY"; // Replace with your actual key
+    const MODEL_NAME = "gemini-2.5-flash";
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+
+    const MessageItem = { // Renamed from MessageBubble
+      props: ['message'],
+      emits: ['edit', 'copy'],
+      setup(props, { emit }) {
+        const contentRef = ref(null);
+        const parsedContent = ref('');
+        const isUser = props.message.role === 'user';
+
+        const updateContentAndRenderMath = (textToParse) => {
+          if (props.message.isError) {
+            parsedContent.value = textToParse; 
+          } else if (props.message.role === 'model') {
+            if (props.message.isStreaming && textToParse !== props.message.originalMarkdown) {
+                parsedContent.value = marked.parseInline(textToParse || ' '); 
+            } else {
+                parsedContent.value = marked.parse(textToParse || '');
+            }
+          } else { 
+            parsedContent.value = marked.parse(textToParse || '');
+          }
+
+          nextTick(() => {
+            if (contentRef.value && !props.message.isError && (props.message.role === 'model' || (textToParse && textToParse.includes('$')))) {
+              try {
+                if (typeof renderMathInElement === 'function') {
+                  renderMathInElement(contentRef.value, {
+                    delimiters: [
+                      { left: '$$', right: '$$', display: true },
+                      { left: '$', right: '$', display: false }
+                    ],
+                    throwOnError: false
+                  });
+                }
+              } catch (e) {
+                console.warn("KaTeX rendering error:", e);
+              }
+            }
+          });
+        };
+
+        watch(() => props.message.parts[0].text, (newText) => {
+          updateContentAndRenderMath(newText);
+        }, { immediate: true });
+
+        watch(() => props.message.isStreaming, (isStreaming, wasStreaming) => {
+          if (wasStreaming && !isStreaming) { 
+            updateContentAndRenderMath(props.message.parts[0].text);
+          }
+        });
+
+        const handleEdit = () => emit('edit', props.message);
+        const handleCopy = () => emit('copy', props.message);
+
+        return {
+          isUser,
+          handleEdit,
+          handleCopy,
+          contentRef,
+          parsedContent,
+          message: props.message 
+        };
+      },
+      template: `
+        <div 
+          :class="[
+            'w-full flex group relative',
+            isUser ? 'justify-end' : 'justify-start' 
+          ]" 
+          :data-message-id="message.id"
+        >
+          <!-- Text Content -->
+          <div :class="['max-w-[85%] sm:max-w-[80%]']">
+              <div 
+                   ref="contentRef"
+                   :class="[
+                      'rendered-content prose prose-sm dark:prose-invert max-w-none',
+                      'prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5',
+                      message.isError 
+                        ? 'p-2.5 border border-red-400/50 dark:border-red-600/50 rounded-lg bg-red-100/70 dark:bg-red-900/40 text-red-700 dark:text-red-300' 
+                        : (isUser ? 'text-slate-700 dark:text-slate-200 text-right' : 'text-slate-800 dark:text-slate-100 text-left')
+                   ]" 
+                   v-html="parsedContent">
+              </div>
+              <span v-if="message.isStreaming && !message.isError" 
+                    :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
+          </div>
+          
+          <!-- Actions (Edit/Copy) -->
+          <div v-if="!message.isError && (isUser || (!message.isStreaming && message.role === 'model'))" 
+               :class="[
+                  'absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150',
+                  isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'
+               ]">
+              <button v-if="isUser" @click="handleEdit" title="Edit message" class="p-1.5 rounded-full bg-slate-100/80 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 shadow-md focus:outline-none focus:ring-1 focus:ring-sky-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg>
+              </button>
+              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 shadow-md focus:outline-none focus:ring-1 focus:ring-sky-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+              </button>
+          </div>
+        </div>
+      `
+    };
+
+    createApp({
+      components: {
+        MessageItem 
+      },
+      setup() {
+        const messages = ref([]);
+        const newMessageText = ref('');
+        const editingMessage = ref(null);
+        const isLoading = ref(false);
+        const chatContainerRef = ref(null);
+
+        const autoGrowTextarea = (event) => {
+            const textarea = event.target;
+            textarea.style.height = 'auto'; 
+            let newHeight = Math.min(textarea.scrollHeight, 128); 
+            textarea.style.height = `${newHeight}px`;
+        };
+
+
+        const scrollToBottom = () => {
+          nextTick(() => {
+            if (chatContainerRef.value) {
+              chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+            }
+          });
+        };
+
+        const addOrUpdateMessage = (role, text, id = null, isStreaming = false, isError = false, originalMarkdown = null) => {
+          const existingMsgIndex = id ? messages.value.findIndex(m => m.id === id) : -1;
+          const messageData = {
+              id: id || Date.now().toString(36) + Math.random().toString(36).substring(2),
+              role: role,
+              parts: [{ text: text }],
+              originalMarkdown: originalMarkdown !== null ? originalMarkdown : text,
+              isStreaming: isStreaming,
+              isError: isError,
+              timestamp: Date.now()
+          };
+
+          if (existingMsgIndex > -1) {
+              messages.value.splice(existingMsgIndex, 1, messageData);
+          } else {
+              messages.value.push(messageData);
+          }
+          scrollToBottom();
+          return messageData.id;
+        };
+
+        const handleSendMessage = async () => {
+          const text = newMessageText.value.trim();
+          if (!text && !editingMessage.value) return;
+
+          isLoading.value = true; 
+          const textarea = document.getElementById('message-input');
+
+          if (editingMessage.value) {
+            const msgIndex = messages.value.findIndex(m => m.id === editingMessage.value.id);
+            if (msgIndex > -1) {
+              messages.value[msgIndex].parts[0].text = text;
+              messages.value[msgIndex].originalMarkdown = text;
+            }
+            editingMessage.value = null;
+            isLoading.value = false;
+          } else {
+            addOrUpdateMessage('user', text, null, false, false, text);
+            const historyForAPI = messages.value
+              .filter(m => !m.isError && (m.role === 'user' || m.role === 'model'))
+              .map(m => ({
+                  role: m.role,
+                  parts: [{ text: m.originalMarkdown }] 
+              }));
+            
+            await fetchBotResponse(historyForAPI); 
+            isLoading.value = false; 
+          }
+          newMessageText.value = '';
+          if (textarea) { 
+             textarea.style.height = 'auto';
+          }
+          if (!editingMessage.value && textarea) { 
+              textarea.focus();
+          }
+        };
+
+        const fetchBotResponse = async (currentChatHistory) => {
+          const botMessageId = addOrUpdateMessage('model', '', null, true); 
+
+          const payload = {
+            contents: currentChatHistory,
+          };
+
+          try {
+            const response = await fetch(API_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            });
+
+            const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
+            if (msgIndex === -1) { 
+              console.error("Bot message placeholder not found."); 
+              return; 
+            }
+
+            if (!response.ok) {
+              const errorData = await response.json().catch(() => ({ error: { message: "Unknown API error" } }));
+              const errorMessage = errorData.error?.message || `Error: ${response.status}`;
+              console.error('API HTTP Error:', errorMessage, "Full error data:", JSON.parse(JSON.stringify(errorData)));
+              messages.value[msgIndex].parts[0].text = `<p class="font-semibold">API Error:</p><p>${errorMessage.replace(/\n/g, '<br>')}</p>`;
+              messages.value[msgIndex].isError = true;
+              messages.value[msgIndex].originalMarkdown = `[API Error: ${errorMessage}]`;
+              return; 
+            }
+
+            const data = await response.json();
+            let botMarkdownText = "";
+            let successfullyExtractedText = false;
+
+            if (data.candidates && data.candidates[0]?.content?.parts && Array.isArray(data.candidates[0].content.parts)) {
+                const parts = data.candidates[0].content.parts;
+                for (const part of parts) {
+                    if (part && typeof part.text === 'string') {
+                        botMarkdownText += part.text; 
+                    }
+                }
+                if (botMarkdownText.trim() !== '') {
+                    successfullyExtractedText = true;
+                }
+            }
+
+            if (successfullyExtractedText) {
+              messages.value[msgIndex].originalMarkdown = botMarkdownText; 
+              let currentText = "";
+              let charIndex = 0;
+              const typingSpeed = 15;
+              const streamInterval = setInterval(() => {
+                if (charIndex < botMarkdownText.length) {
+                  currentText += botMarkdownText[charIndex++];
+                  messages.value[msgIndex].parts[0].text = currentText;
+                  scrollToBottom();
+                } else {
+                  clearInterval(streamInterval);
+                  messages.value[msgIndex].parts[0].text = botMarkdownText;
+                  messages.value[msgIndex].isStreaming = false; 
+                  scrollToBottom();
+                }
+              }, typingSpeed);
+            } else if (data.promptFeedback?.blockReason) {
+              const reason = data.promptFeedback.blockReason;
+              const blockMessage = `<p class="font-semibold">Response Blocked:</p><p>Reason: ${reason}.</p>`;
+              console.warn("API response blocked:", reason, "Full prompt feedback:", JSON.parse(JSON.stringify(data.promptFeedback)));
+              messages.value[msgIndex].parts[0].text = blockMessage;
+              messages.value[msgIndex].isError = true;
+              messages.value[msgIndex].isStreaming = false;
+              messages.value[msgIndex].originalMarkdown = `[Blocked: ${reason}]`;
+            } else {
+              const errorText = `<p class="font-semibold">Error:</p><p>Received an invalid or empty response from the AI.</p>`;
+              console.warn("Invalid/Empty Response. Full API response data:", JSON.parse(JSON.stringify(data)));
+              messages.value[msgIndex].parts[0].text = errorText;
+              messages.value[msgIndex].isError = true;
+              messages.value[msgIndex].isStreaming = false;
+              messages.value[msgIndex].originalMarkdown = `[Error: Invalid/Empty Response]`;
+            }
+          } catch (error) {
+            console.error('Fetch/Network Error:', error);
+            const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
+            if (msgIndex > -1) {
+              messages.value[msgIndex].parts[0].text = `<p class="font-semibold">Network Error:</p><p>${error.message}</p>`;
+              messages.value[msgIndex].isError = true;
+              messages.value[msgIndex].isStreaming = false; 
+              messages.value[msgIndex].originalMarkdown = `[Network Error: ${error.message}]`;
+            }
+          } finally {
+             const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
+             if (msgIndex > -1 && messages.value[msgIndex].isStreaming) {
+                if (messages.value[msgIndex].parts[0].text === '' && !messages.value[msgIndex].isError) {
+                    messages.value[msgIndex].parts[0].text = '<p class="font-semibold">Stream Error:</p><p>[Empty Response/Stream Error]</p>'; 
+                }
+                messages.value[msgIndex].isStreaming = false;
+             }
+            scrollToBottom();
+          }
+        };
+
+        const startEdit = (messageToEdit) => {
+          editingMessage.value = messageToEdit;
+          newMessageText.value = messageToEdit.originalMarkdown;
+          const textarea = document.getElementById('message-input');
+          if (textarea) {
+            textarea.focus();
+            nextTick(() => autoGrowTextarea({target: textarea})); 
+          }
+        };
+
+        const performCopy = (messageToCopy) => {
+          const textToCopy = messageToCopy.originalMarkdown || messageToCopy.parts[0].text;
+          navigator.clipboard.writeText(textToCopy.trim())
+            .then(() => {
+                const msgElement = document.querySelector(`[data-message-id="${messageToCopy.id}"]`);
+                if (msgElement) {
+                    const copyBtn = msgElement.querySelector('.copy-button');
+                    if (copyBtn) {
+                        const originalIconSVG = copyBtn.innerHTML;
+                        copyBtn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';
+                        setTimeout(() => { copyBtn.innerHTML = originalIconSVG; }, 1500);
+                    }
+                }
+            })
+            .catch(err => console.error('Failed to copy text: ', err));
+        };
+
+        const clearInput = () => {
+          newMessageText.value = '';
+          editingMessage.value = null;
+          const textarea = document.getElementById('message-input');
+          if (textarea) {
+            textarea.focus();
+            textarea.style.height = 'auto'; 
+          }
+        };
+        
+        return {
+          messages,
+          newMessageText,
+          isLoading,
+          handleSendMessage,
+          startEdit,
+          performCopy,
+          clearInput,
+          chatContainerRef,
+          editingMessage,
+          autoGrowTextarea
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
