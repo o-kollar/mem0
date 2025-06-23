@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vue.js Tailwind Canvas Chat UI - Smoke Glass</title>
+  <title>Vue.js D3 Graph Chat UI - LLM Controlled</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link
@@ -21,6 +21,8 @@
     src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
     crossorigin="anonymous"
   ></script>
+  <!-- D3.js CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     @keyframes blink {
       0%, 100% { opacity: 1; }
@@ -72,84 +74,342 @@
     .dark .shadow-top-lg {
         box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.1), 0 -5px 8px -6px rgb(0 0 0 / 0.1);
     }
+
+    /* D3 Graph Styling */
+    .link {
+      stroke: #9ca3af; /* gray-400 */
+      stroke-width: 1.5px;
+    }
+    .dark .link {
+      stroke: #6b7280; /* gray-500 */
+    }
+    .sticky-note {
+      stroke: #eab308; /* yellow-500 */
+      stroke-width: 1.5px;
+      rx: 5;
+      ry: 5;
+    }
+    .note-label {
+      pointer-events: none;
+      font-size: 12px;
+      text-anchor: middle;
+      dominant-baseline: central;
+      fill: #1f2937; /* gray-800 */
+    }
+    .dark .note-label {
+        fill: #f3f4f6; /* gray-100 */
+    }
+    #graphContainer {
+        background-color: #f9fafb; /* bg-slate-50 or gray-50 */
+    }
+    .dark #graphContainer {
+        background-color: #1e293b; /* bg-slate-800, slightly lighter than 900 for contrast */
+    }
   </style>
 </head>
-<body class="flex flex-col h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased">
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased">
 
-  <div id="app" class="flex flex-col h-full">
-    <!-- Chat Container - The "Canvas" -->
-    <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
-      <message-item 
-        v-for="msg in messages"
-        :key="msg.id"
-        :message="msg"
-        @edit="startEdit"
-        @copy="performCopy"
-      ></message-item>
+  <div id="app" class="flex flex-col h-screen w-full">
+    <!-- Top Area: Graph Visualization -->
+    <div id="graph-visualization-area" class="h-2/5 md:h-1/2 border-b border-gray-300 dark:border-slate-700 relative shadow-md">
+        <div id="graphContainer" class="w-full h-full rounded-t-lg">
+            <!-- D3 will append the SVG element here -->
+        </div>
     </div>
 
-    <!-- Input Form - Smoke Glass -->
-    <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-gray-700/50 dark:bg-black/60 backdrop-blur-xl border-t border-gray-500/20 dark:border-slate-700/30 shadow-top-lg">
-      <div class="relative flex items-center space-x-2">
-        <textarea
-          id="message-input"
-          rows="1" 
-          v-model="newMessageText"
-          @keydown.enter.exact.prevent="handleSendMessage"
-          @input="autoGrowTextarea"
-          class="flex-grow resize-none border border-gray-600/30 dark:border-slate-700/40 rounded-xl 
-                 focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500/80 
-                 sm:text-sm 
-                 bg-gray-800/20 dark:bg-black/40 backdrop-blur-sm 
-                 text-slate-800 dark:text-slate-100 
-                 py-2.5 px-3.5 
-                 placeholder-gray-500 dark:placeholder-slate-500
-                 overflow-y-hidden max-h-32" 
-                 style="line-height: 1.5rem;"
-          placeholder="Type your message..."
-          :disabled="isLoading"
-        ></textarea>
-        <button
-            type="button"
-            @click="clearInput"
-            :disabled="isLoading"
-            title="Clear input"
-            class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-gray-400 dark:text-slate-500 hover:bg-gray-600/30 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-1 focus:ring-gray-500/50 dark:focus:ring-slate-600 disabled:opacity-50 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75L14.25 12m0 0L12 14.25m2.25-2.25L14.25 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        </button>
-        <button
-            type="submit"
-            :disabled="isLoading || !newMessageText.trim() && !editingMessage"
-            class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 focus:ring-2 focus:outline-none focus:ring-sky-400 dark:focus:ring-sky-600 disabled:bg-sky-500/60 disabled:cursor-not-allowed transition-colors"
-            title="Send message"
-          >
-            <span v-if="isLoading">
-                <svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-sky-200 dark:fill-sky-700" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
-                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
-                </svg>
-            </span>
-            <span v-else>
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                    <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                </svg>
-            </span>
-        </button>
+    <!-- Bottom Area: Chat UI -->
+    <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+      <!-- Chat Container -->
+      <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
+        <message-item 
+          v-for="msg in messages"
+          :key="msg.id"
+          :message="msg"
+          @edit="startEdit"
+          @copy="performCopy"
+        ></message-item>
       </div>
-    </form>
+
+      <!-- Input Form -->
+      <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-gray-700/50 dark:bg-black/60 backdrop-blur-xl border-t border-gray-500/20 dark:border-slate-700/30 shadow-top-lg">
+        <div class="relative flex items-center space-x-2">
+          <textarea
+            id="message-input"
+            rows="1" 
+            v-model="newMessageText"
+            @keydown.enter.exact.prevent="handleSendMessage"
+            @input="autoGrowTextarea"
+            class="flex-grow resize-none border border-gray-600/30 dark:border-slate-700/40 rounded-xl 
+                   focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500/80 
+                   sm:text-sm 
+                   bg-gray-800/20 dark:bg-black/40 backdrop-blur-sm 
+                   text-slate-800 dark:text-slate-100 
+                   py-2.5 px-3.5 
+                   placeholder-gray-500 dark:placeholder-slate-500
+                   overflow-y-hidden max-h-32" 
+                   style="line-height: 1.5rem;"
+            placeholder="Type your message or graph command..."
+            :disabled="isLoading"
+          ></textarea>
+          <button
+              type="button"
+              @click="clearInput"
+              :disabled="isLoading"
+              title="Clear input"
+              class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-gray-400 dark:text-slate-500 hover:bg-gray-600/30 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-1 focus:ring-gray-500/50 dark:focus:ring-slate-600 disabled:opacity-50 transition-colors"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75L14.25 12m0 0L12 14.25m2.25-2.25L14.25 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+          </button>
+          <button
+              type="submit"
+              :disabled="isLoading || !newMessageText.trim() && !editingMessage"
+              class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 focus:ring-2 focus:outline-none focus:ring-sky-400 dark:focus:ring-sky-600 disabled:bg-sky-500/60 disabled:cursor-not-allowed transition-colors"
+              title="Send message"
+            >
+              <span v-if="isLoading">
+                  <svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-sky-200 dark:fill-sky-700" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                      <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                  </svg>
+              </span>
+              <span v-else>
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                      <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
+                  </svg>
+              </span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <script type="module">
-    import { createApp, ref, nextTick, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    import { createApp, ref, nextTick, watch, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
-    const API_KEY = "AIzaSyCvtMPDKK4oT_-1RB0MBOYoDwPjme6akoY"; // Replace with your actual key
-    const MODEL_NAME = "gemini-2.5-flash";
+    // --- Gemini API Configuration ---
+    const API_KEY = "AIzaSyCvtMPDKK4oT_-1RB0MBOYoDwPjme6akoY"; // !!! REPLACE WITH YOUR ACTUAL GEMINI API KEY !!!
+    const MODEL_NAME = "gemini-1.5-flash-latest"; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
+    
+    // --- D3 Graph Management ---
+    const d3GraphManager = {
+        svg: null,
+        simulation: null,
+        graph: { nodes: [], links: [] },
+        noteWidth: 100,
+        noteHeight: 60,
+        containerId: 'graphContainer',
+        isDarkMode: () => document.documentElement.classList.contains('dark'),
 
-    const MessageItem = { // Renamed from MessageBubble
+        init() {
+            const container = document.getElementById(this.containerId);
+            if (!container) {
+                console.error("D3 graph container not found:", this.containerId);
+                return;
+            }
+            
+            // Debounce resize function
+            let resizeTimer;
+            const handleResize = () => {
+                const newWidth = container.clientWidth;
+                const newHeight = container.clientHeight;
+                if (newWidth > 0 && newHeight > 0) {
+                    this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
+                    this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart();
+                }
+            };
+
+            const debouncedResize = () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 100); // Adjust delay as needed
+            };
+            
+            const width = container.clientWidth || 600; // Fallback width
+            const height = container.clientHeight || 400; // Fallback height
+
+
+            this.svg = d3.select(`#${this.containerId}`)
+                .append("svg")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+
+            this.simulation = d3.forceSimulation(this.graph.nodes)
+                .force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(120))
+                .force("charge", d3.forceManyBody().strength(-250))
+                .force("center", d3.forceCenter(width / 2, height / 2))
+                .on("tick", this.ticked.bind(this));
+
+            this.svg.append("g").attr("class", "links");
+            this.svg.append("g").attr("class", "notes");
+            this.svg.append("g").attr("class", "labels");
+            
+            this.update();
+
+            // Resize observer
+            const resizeObserver = new ResizeObserver(entries => {
+                debouncedResize();
+            });
+            resizeObserver.observe(container);
+            
+            // Initial call to set size correctly if container is already sized
+            if (container.clientWidth > 0 && container.clientHeight > 0) {
+                 handleResize();
+            }
+        },
+
+        ticked() {
+            if (!this.svg) return;
+            this.svg.selectAll("g.links line")
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            this.svg.selectAll("g.notes rect")
+                .attr("x", d => d.x - this.noteWidth / 2)
+                .attr("y", d => d.y - this.noteHeight / 2);
+
+            this.svg.selectAll("g.labels text")
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        },
+
+        update() {
+            if (!this.svg || !this.simulation) return;
+
+            const defaultFill = this.isDarkMode() ? "#334155" : "#f1f5f9"; // slate-700 / slate-100 (node background)
+            const defaultStroke = this.isDarkMode() ? "#64748b" : "#cbd5e1"; // slate-500 / slate-300 (node border)
+
+            // Update links
+            const link = this.svg.select("g.links")
+                .selectAll("line")
+                .data(this.graph.links, d => `${d.source.id || d.source}-${d.target.id || d.target}`);
+            link.exit().remove();
+            link.enter().append("line").attr("class", "link");
+
+            // Update notes
+            const notesSelection = this.svg.select("g.notes")
+                .selectAll("rect")
+                .data(this.graph.nodes, d => d.id);
+            notesSelection.exit().remove();
+            notesSelection.enter().append("rect")
+                .attr("class", "sticky-note")
+                .attr("width", this.noteWidth)
+                .attr("height", this.noteHeight)
+                .style("fill", d => d.isHighlighted ? (this.isDarkMode() ? "#60a5fa" : "#93c5fd") : defaultFill) 
+                .style("stroke", d => d.isHighlighted ? (this.isDarkMode() ? "#93c5fd" : "#60a5fa") : defaultStroke)
+                .call(d3.drag()
+                    .on("start", this.dragStarted.bind(this))
+                    .on("drag", this.dragged.bind(this))
+                    .on("end", this.dragEnded.bind(this)))
+                .merge(notesSelection) // Apply style updates to existing nodes too
+                .style("fill", d => d.isHighlighted ? (this.isDarkMode() ? "#60a5fa" : "#93c5fd") : defaultFill) 
+                .style("stroke", d => d.isHighlighted ? (this.isDarkMode() ? "#93c5fd" : "#60a5fa") : defaultStroke);
+
+
+            // Update labels
+            const labels = this.svg.select("g.labels")
+                .selectAll("text")
+                .data(this.graph.nodes, d => d.id);
+            labels.exit().remove();
+            labels.enter().append("text")
+                .attr("class", "note-label")
+                .merge(labels)
+                .text(d => d.id.length > 15 ? d.id.substring(0,12) + "..." : d.id);
+
+
+            this.simulation.nodes(this.graph.nodes);
+            this.simulation.force("link").links(this.graph.links);
+            this.simulation.alpha(0.3).restart();
+        },
+
+        dragStarted(event, d) {
+            if (!event.active) this.simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        },
+        dragged(event, d) { d.fx = event.x; d.fy = event.y; },
+        dragEnded(event, d) {
+            if (!event.active) this.simulation.alphaTarget(0);
+            // d.fx = null; // Keep position fixed after drag by default
+            // d.fy = null;
+        },
+
+        addNode(id) {
+            if (!id || typeof id !== 'string' || id.trim() === "") return { success: false, message: "Node ID cannot be empty." };
+            id = id.trim();
+            if (!this.graph.nodes.find(n => n.id === id)) {
+                this.graph.nodes.push({ id: id, isHighlighted: false });
+                this.update();
+                return { success: true, message: `Node "${id}" created.` };
+            }
+            return { success: false, message: `Node "${id}" already exists.` };
+        },
+
+        addLink(sourceId, targetId) {
+            if (!sourceId || !targetId) return { success: false, message: "Source and target IDs are required." };
+             sourceId = sourceId.trim(); targetId = targetId.trim();
+            if (sourceId === targetId) return { success: false, message: "Cannot link a node to itself."}
+
+            const sourceNode = this.graph.nodes.find(n => n.id === sourceId);
+            const targetNode = this.graph.nodes.find(n => n.id === targetId);
+
+            if (!sourceNode) return { success: false, message: `Source node "${sourceId}" not found.` };
+            if (!targetNode) return { success: false, message: `Target node "${targetId}" not found.` };
+            
+            const linkExists = this.graph.links.find(l =>
+                (l.source.id === sourceId && l.target.id === targetId) ||
+                (l.source.id === targetId && l.target.id === sourceId)
+            );
+            if (!linkExists) {
+                this.graph.links.push({ source: sourceId, target: targetId });
+                this.update();
+                return { success: true, message: `Linked "${sourceId}" to "${targetId}".` };
+            }
+            return { success: false, message: `Link between "${sourceId}" and "${targetId}" already exists.` };
+        },
+
+        deleteNode(id) {
+            id = id.trim();
+            const nodeExists = this.graph.nodes.find(n => n.id === id);
+            if (!nodeExists) return { success: false, message: `Node "${id}" not found.` };
+
+            this.graph.nodes = this.graph.nodes.filter(n => n.id !== id);
+            this.graph.links = this.graph.links.filter(l => 
+                (l.source.id || l.source) !== id && (l.target.id || l.target) !== id
+            );
+            this.update();
+            return { success: true, message: `Node "${id}" and its links deleted.` };
+        },
+
+        highlightSearch(query) {
+            if (!this.svg) return { success: false, message: "Graph not initialized."};
+            const normalizedQuery = query ? query.trim().toLowerCase() : "";
+            
+            this.graph.nodes.forEach(node => {
+                node.isHighlighted = normalizedQuery && node.id.toLowerCase().includes(normalizedQuery);
+            });
+            
+            this.update(); // Re-render to apply new styles
+
+            return { success: true, message: normalizedQuery ? `Highlighted nodes matching "${query}".` : "Cleared search highlight." };
+        },
+        
+        clearGraph() {
+            this.graph.nodes = [];
+            this.graph.links = [];
+            this.update();
+            return { success: true, message: "Graph cleared." };
+        }
+    };
+
+
+    // --- Vue App ---
+    const MessageItem = { // Same as before
       props: ['message'],
       emits: ['edit', 'copy'],
       setup(props, { emit }) {
@@ -160,7 +420,7 @@
         const updateContentAndRenderMath = (textToParse) => {
           if (props.message.isError) {
             parsedContent.value = textToParse; 
-          } else if (props.message.role === 'model') {
+          } else if (props.message.role === 'model' || props.message.isSystemToolResponse) { // Render system tool responses with marked too
             if (props.message.isStreaming && textToParse !== props.message.originalMarkdown) {
                 parsedContent.value = marked.parseInline(textToParse || ' '); 
             } else {
@@ -219,25 +479,24 @@
           ]" 
           :data-message-id="message.id"
         >
-          <!-- Text Content -->
           <div :class="['max-w-[85%] sm:max-w-[80%]']">
               <div 
                    ref="contentRef"
                    :class="[
                       'rendered-content prose prose-sm dark:prose-invert max-w-none',
                       'prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5',
-                      message.isError 
+                       message.isSystemToolResponse ? 'p-2.5 text-xs italic bg-slate-200 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700' : 
+                      (message.isError 
                         ? 'p-2.5 border border-red-400/50 dark:border-red-600/50 rounded-lg bg-red-100/70 dark:bg-red-900/40 text-red-700 dark:text-red-300' 
-                        : (isUser ? 'text-slate-700 dark:text-slate-200 text-right' : 'text-slate-800 dark:text-slate-100 text-left')
+                        : (isUser ? 'text-slate-700 dark:text-slate-200 text-right' : 'text-slate-800 dark:text-slate-100 text-left'))
                    ]" 
                    v-html="parsedContent">
               </div>
-              <span v-if="message.isStreaming && !message.isError" 
+              <span v-if="message.isStreaming && !message.isError && !message.isSystemToolResponse" 
                     :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
           </div>
           
-          <!-- Actions (Edit/Copy) -->
-          <div v-if="!message.isError && (isUser || (!message.isStreaming && message.role === 'model'))" 
+          <div v-if="!message.isError && !message.isSystemToolResponse && (isUser || (!message.isStreaming && message.role === 'model'))" 
                :class="[
                   'absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150',
                   isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2'
@@ -254,9 +513,7 @@
     };
 
     createApp({
-      components: {
-        MessageItem 
-      },
+      components: { MessageItem },
       setup() {
         const messages = ref([]);
         const newMessageText = ref('');
@@ -264,23 +521,61 @@
         const isLoading = ref(false);
         const chatContainerRef = ref(null);
 
-        const autoGrowTextarea = (event) => {
+        // --- Gemini Function Tools Definition (Same as before) ---
+        const geminiTools = [{
+          functionDeclarations: [
+            {
+              name: "create_node",
+              description: "Creates a new sticky note (node) on the graph. Each node must have a unique ID or label.",
+              parameters: { type: "OBJECT", properties: { node_id: { type: "STRING", description: "The unique ID or label for the new note." }}, required: ["node_id"] }
+            },
+            {
+              name: "connect_nodes",
+              description: "Connects two existing sticky notes on the graph with a link.",
+              parameters: { type: "OBJECT", properties: { source_id: { type: "STRING", description: "The ID of the source note." }, target_id: { type: "STRING", description: "The ID of the target note." }}, required: ["source_id", "target_id"] }
+            },
+            {
+              name: "delete_node",
+              description: "Deletes a sticky note and all its connections from the graph.",
+              parameters: { type: "OBJECT", properties: { node_id: { type: "STRING", description: "The ID of the note to delete." }}, required: ["node_id"] }
+            },
+            {
+              name: "search_nodes",
+              description: "Highlights nodes on the graph that match the search query. Does not return a list, just highlights.",
+              parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The search term to highlight nodes." }}, required: ["query"] }
+            },
+            {
+              name: "clear_graph",
+              description: "Removes all nodes and links from the graph.",
+              parameters: { type: "OBJECT", properties: {}, required: [] }
+            },
+            {
+              name: "list_nodes",
+              description: "Returns a list of all current node IDs in the graph.",
+              parameters: { type: "OBJECT", properties: {}, required: [] }
+            }
+          ]
+        }];
+
+        const autoGrowTextarea = (event) => { // Same as before
             const textarea = event.target;
             textarea.style.height = 'auto'; 
             let newHeight = Math.min(textarea.scrollHeight, 128); 
             textarea.style.height = `${newHeight}px`;
         };
 
-
-        const scrollToBottom = () => {
+        const scrollToBottom = (force = false) => { // Same as before
           nextTick(() => {
             if (chatContainerRef.value) {
-              chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+                const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.value;
+                if (force || scrollHeight - scrollTop - clientHeight < 100) {
+                    chatContainerRef.value.scrollTop = chatContainerRef.value.scrollHeight;
+                }
             }
           });
         };
 
-        const addOrUpdateMessage = (role, text, id = null, isStreaming = false, isError = false, originalMarkdown = null) => {
+        const addOrUpdateMessage = (role, text, id = null, isStreaming = false, isError = false, originalMarkdown = null, isSystemToolResponse = false) => { // Same as before
           const existingMsgIndex = id ? messages.value.findIndex(m => m.id === id) : -1;
           const messageData = {
               id: id || Date.now().toString(36) + Math.random().toString(36).substring(2),
@@ -289,6 +584,7 @@
               originalMarkdown: originalMarkdown !== null ? originalMarkdown : text,
               isStreaming: isStreaming,
               isError: isError,
+              isSystemToolResponse: isSystemToolResponse,
               timestamp: Date.now()
           };
 
@@ -297,11 +593,39 @@
           } else {
               messages.value.push(messageData);
           }
-          scrollToBottom();
+          scrollToBottom(role !== 'model' || isSystemToolResponse);
           return messageData.id;
         };
+        
+        const handleGraphFunctionCall = (functionName, args) => { // Same as before
+            let result;
+            switch (functionName) {
+                case "create_node":
+                    result = d3GraphManager.addNode(args.node_id);
+                    break;
+                case "connect_nodes":
+                    result = d3GraphManager.addLink(args.source_id, args.target_id);
+                    break;
+                case "delete_node":
+                    result = d3GraphManager.deleteNode(args.node_id);
+                    break;
+                case "search_nodes":
+                    result = d3GraphManager.highlightSearch(args.query);
+                    break;
+                case "clear_graph":
+                    result = d3GraphManager.clearGraph();
+                    break;
+                case "list_nodes":
+                    const nodeIds = d3GraphManager.graph.nodes.map(n => n.id);
+                    result = { success: true, message: `Current nodes: ${nodeIds.join(', ') || 'None'}.`, data: nodeIds };
+                    break;
+                default:
+                    result = { success: false, message: `Unknown function: ${functionName}` };
+            }
+            return result;
+        };
 
-        const handleSendMessage = async () => {
+        const handleSendMessage = async () => { // Same as before
           const text = newMessageText.value.trim();
           if (!text && !editingMessage.value) return;
 
@@ -319,29 +643,26 @@
           } else {
             addOrUpdateMessage('user', text, null, false, false, text);
             const historyForAPI = messages.value
-              .filter(m => !m.isError && (m.role === 'user' || m.role === 'model'))
-              .map(m => ({
-                  role: m.role,
-                  parts: [{ text: m.originalMarkdown }] 
-              }));
+                .filter(m => !m.isError && !m.isSystemToolResponse) 
+                .map(m => ({
+                    role: m.role,
+                    parts: m.role === 'tool' ? m.parts : [{ text: m.originalMarkdown }] 
+                }));
             
             await fetchBotResponse(historyForAPI); 
-            isLoading.value = false; 
           }
           newMessageText.value = '';
-          if (textarea) { 
-             textarea.style.height = 'auto';
-          }
-          if (!editingMessage.value && textarea) { 
-              textarea.focus();
-          }
+          if (textarea) textarea.style.height = 'auto';
+          if (!editingMessage.value && textarea) textarea.focus();
+          isLoading.value = false; 
         };
 
-        const fetchBotResponse = async (currentChatHistory) => {
+        const fetchBotResponse = async (currentChatHistory) => { // Same as before, with minor logging change
           const botMessageId = addOrUpdateMessage('model', '', null, true); 
 
           const payload = {
             contents: currentChatHistory,
+            tools: geminiTools,
           };
 
           try {
@@ -353,8 +674,8 @@
 
             const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
             if (msgIndex === -1) { 
-              console.error("Bot message placeholder not found."); 
-              return; 
+              console.error("Bot message placeholder not found during fetchBotResponse."); 
+              isLoading.value = false; return; 
             }
 
             if (!response.ok) {
@@ -364,80 +685,120 @@
               messages.value[msgIndex].parts[0].text = `<p class="font-semibold">API Error:</p><p>${errorMessage.replace(/\n/g, '<br>')}</p>`;
               messages.value[msgIndex].isError = true;
               messages.value[msgIndex].originalMarkdown = `[API Error: ${errorMessage}]`;
-              return; 
+              messages.value[msgIndex].isStreaming = false;
+              isLoading.value = false; return; 
             }
 
             const data = await response.json();
-            let botMarkdownText = "";
-            let successfullyExtractedText = false;
+            
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts) {
+                const errorText = `<p class="font-semibold">Error:</p><p>Received an invalid or empty response structure from the AI.</p>`;
+                console.warn("Invalid/Empty Response Structure. Full API response data:", JSON.parse(JSON.stringify(data)));
+                messages.value[msgIndex].parts[0].text = errorText;
+                messages.value[msgIndex].isError = true;
+                messages.value[msgIndex].originalMarkdown = `[Error: Invalid/Empty Response Structure]`;
+                messages.value[msgIndex].isStreaming = false;
+                isLoading.value = false; return;
+            }
 
-            if (data.candidates && data.candidates[0]?.content?.parts && Array.isArray(data.candidates[0].content.parts)) {
-                const parts = data.candidates[0].content.parts;
-                for (const part of parts) {
-                    if (part && typeof part.text === 'string') {
-                        botMarkdownText += part.text; 
-                    }
-                }
-                if (botMarkdownText.trim() !== '') {
-                    successfullyExtractedText = true;
+            const parts = data.candidates[0].content.parts;
+            let textResponse = "";
+            let functionCallPart = null;
+
+            for (const part of parts) {
+                if (part.text) {
+                    textResponse += part.text;
+                } else if (part.functionCall) {
+                    functionCallPart = part.functionCall;
+                    break; 
                 }
             }
 
-            if (successfullyExtractedText) {
-              messages.value[msgIndex].originalMarkdown = botMarkdownText; 
+            if (functionCallPart) {
+                messages.value[msgIndex].isStreaming = false; 
+                messages.value[msgIndex].parts[0].text = `<i>Invoking tool: ${functionCallPart.name}...</i>`;
+                messages.value[msgIndex].originalMarkdown = `[Tool Call: ${functionCallPart.name}]`;
+
+                const functionResult = handleGraphFunctionCall(functionCallPart.name, functionCallPart.args);
+                
+                addOrUpdateMessage('system', 
+                    `<b>Tool Executed: ${functionCallPart.name}</b><br/>${functionResult.message.replace(/\n/g, '<br>')}`, 
+                    null, false, !functionResult.success, 
+                    `[Tool Result: ${functionCallPart.name} - ${functionResult.message}]`, 
+                    true);
+
+                const newHistory = [
+                    ...currentChatHistory,
+                    { role: 'model', parts: [{ functionCall: functionCallPart }] }, 
+                    { 
+                      role: 'tool', 
+                      parts: [{ 
+                        functionResponse: {
+                          name: functionCallPart.name,
+                          response: { name: functionCallPart.name, content: functionResult } 
+                        }
+                      }]
+                    } 
+                ];
+                await fetchBotResponse(newHistory); 
+
+            } else if (textResponse.trim() !== "") {
+              messages.value[msgIndex].originalMarkdown = textResponse;
               let currentText = "";
               let charIndex = 0;
-              const typingSpeed = 15;
+              const typingSpeed = 15; 
               const streamInterval = setInterval(() => {
-                if (charIndex < botMarkdownText.length) {
-                  currentText += botMarkdownText[charIndex++];
+                if (charIndex < textResponse.length) {
+                  currentText += textResponse[charIndex++];
                   messages.value[msgIndex].parts[0].text = currentText;
                   scrollToBottom();
                 } else {
                   clearInterval(streamInterval);
-                  messages.value[msgIndex].parts[0].text = botMarkdownText;
+                  messages.value[msgIndex].parts[0].text = textResponse;
                   messages.value[msgIndex].isStreaming = false; 
-                  scrollToBottom();
+                  scrollToBottom(true);
+                  isLoading.value = false; 
                 }
               }, typingSpeed);
-            } else if (data.promptFeedback?.blockReason) {
-              const reason = data.promptFeedback.blockReason;
+            } else if (data.candidates[0].finishReason === "SAFETY" || data.promptFeedback?.blockReason) {
+              const reason = data.promptFeedback?.blockReason || "Safety filters";
               const blockMessage = `<p class="font-semibold">Response Blocked:</p><p>Reason: ${reason}.</p>`;
-              console.warn("API response blocked:", reason, "Full prompt feedback:", JSON.parse(JSON.stringify(data.promptFeedback)));
+              console.warn("API response blocked:", reason, "Full response:", JSON.parse(JSON.stringify(data)));
               messages.value[msgIndex].parts[0].text = blockMessage;
               messages.value[msgIndex].isError = true;
               messages.value[msgIndex].isStreaming = false;
               messages.value[msgIndex].originalMarkdown = `[Blocked: ${reason}]`;
+              isLoading.value = false;
             } else {
-              const errorText = `<p class="font-semibold">Error:</p><p>Received an invalid or empty response from the AI.</p>`;
-              console.warn("Invalid/Empty Response. Full API response data:", JSON.parse(JSON.stringify(data)));
-              messages.value[msgIndex].parts[0].text = errorText;
-              messages.value[msgIndex].isError = true;
+              messages.value[msgIndex].parts[0].text = `<p class="font-semibold">Info:</p><p>Received an empty text response from the AI.</p>`;
               messages.value[msgIndex].isStreaming = false;
-              messages.value[msgIndex].originalMarkdown = `[Error: Invalid/Empty Response]`;
+              messages.value[msgIndex].originalMarkdown = `[Empty AI Response]`;
+              isLoading.value = false;
             }
+
           } catch (error) {
-            console.error('Fetch/Network Error:', error);
+            console.error('Fetch/Network/Processing Error:', error);
             const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
             if (msgIndex > -1) {
-              messages.value[msgIndex].parts[0].text = `<p class="font-semibold">Network Error:</p><p>${error.message}</p>`;
+              messages.value[msgIndex].parts[0].text = `<p class="font-semibold">Error:</p><p>${error.message}</p>`;
               messages.value[msgIndex].isError = true;
               messages.value[msgIndex].isStreaming = false; 
-              messages.value[msgIndex].originalMarkdown = `[Network Error: ${error.message}]`;
+              messages.value[msgIndex].originalMarkdown = `[Error: ${error.message}]`;
             }
+            isLoading.value = false;
           } finally {
-             const msgIndex = messages.value.findIndex(m => m.id === botMessageId);
-             if (msgIndex > -1 && messages.value[msgIndex].isStreaming) {
-                if (messages.value[msgIndex].parts[0].text === '' && !messages.value[msgIndex].isError) {
-                    messages.value[msgIndex].parts[0].text = '<p class="font-semibold">Stream Error:</p><p>[Empty Response/Stream Error]</p>'; 
+             const finalMsgIndex = messages.value.findIndex(m => m.id === botMessageId);
+             if (finalMsgIndex > -1 && messages.value[finalMsgIndex].isStreaming) {
+                if (messages.value[finalMsgIndex].parts[0].text === '' && !messages.value[finalMsgIndex].isError) {
+                    messages.value[finalMsgIndex].parts[0].text = '<p class="font-semibold">Stream Error:</p><p>[Empty Response/Stream Error]</p>'; 
                 }
-                messages.value[msgIndex].isStreaming = false;
+                messages.value[finalMsgIndex].isStreaming = false;
              }
-            scrollToBottom();
+            scrollToBottom(true);
           }
         };
 
-        const startEdit = (messageToEdit) => {
+        const startEdit = (messageToEdit) => { // Same as before
           editingMessage.value = messageToEdit;
           newMessageText.value = messageToEdit.originalMarkdown;
           const textarea = document.getElementById('message-input');
@@ -447,7 +808,7 @@
           }
         };
 
-        const performCopy = (messageToCopy) => {
+        const performCopy = (messageToCopy) => { // Same as before
           const textToCopy = messageToCopy.originalMarkdown || messageToCopy.parts[0].text;
           navigator.clipboard.writeText(textToCopy.trim())
             .then(() => {
@@ -464,27 +825,37 @@
             .catch(err => console.error('Failed to copy text: ', err));
         };
 
-        const clearInput = () => {
+        const clearInput = () => { // Same as before
           newMessageText.value = '';
           editingMessage.value = null;
           const textarea = document.getElementById('message-input');
           if (textarea) {
-            textarea.focus();
             textarea.style.height = 'auto'; 
+            textarea.focus();
           }
         };
         
+        onMounted(() => {
+            d3GraphManager.init();
+            addOrUpdateMessage('model', "Hello! I can help you visualize ideas. Try commands like 'Create node: My first idea', 'Connect 'My first idea' to 'Another concept'', or 'Search for 'idea''.", null, false, false, "Welcome message");
+        });
+
+        // Watch for dark mode changes to update graph colors
+        const observer = new MutationObserver((mutationsList) => {
+            for (const mutation of mutationsList) {
+                if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                    // Update graph node colors and re-apply search highlight if any
+                    d3GraphManager.highlightSearch(d3GraphManager.graph.nodes.find(n => n.isHighlighted)?.id.split(" ")[0] || ""); // A bit hacky way to get current query
+                }
+            }
+        });
+        observer.observe(document.documentElement, { attributes: true });
+
+
         return {
-          messages,
-          newMessageText,
-          isLoading,
-          handleSendMessage,
-          startEdit,
-          performCopy,
-          clearInput,
-          chatContainerRef,
-          editingMessage,
-          autoGrowTextarea
+          messages, newMessageText, isLoading,
+          handleSendMessage, startEdit, performCopy, clearInput,
+          chatContainerRef, editingMessage, autoGrowTextarea
         };
       }
     }).mount('#app');
