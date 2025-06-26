@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vue.js D3 Graph Chat UI - LLM Controlled</title>
+  <script>
+    // Force light mode by using class-based dark mode and not adding the 'dark' class
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <link
@@ -34,8 +40,6 @@
     .dark #chat-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); }
     #chat-container::-webkit-scrollbar-thumb:hover { background-color: rgba(0,0,0,0.2); }
     .dark #chat-container::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.2); }
-    .shadow-top-lg { box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.05), 0 -5px 8px -6px rgb(0 0 0 / 0.05); }
-    .dark .shadow-top-lg { box-shadow: 0 -12px 20px -5px rgb(0 0 0 / 0.1), 0 -5px 8px -6px rgb(0 0 0 / 0.1); }
     .link { stroke: #9ca3af; stroke-width: 1.5px; }
     .dark .link { stroke: #6b7280; }
     .sticky-note { rx: 5; ry: 5; cursor: pointer; }
@@ -46,7 +50,7 @@
         height: 350px;
         width: 100%;
         border-radius: 0.5rem;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        border: 1px solid #e2e8f0; /* slate-200 */
         margin-top: 1rem;
         margin-bottom: 1rem;
         transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
@@ -61,7 +65,6 @@
         background-color: #fff;
         border: 1px solid #e2e8f0; /* slate-200 */
         border-radius: 0.375rem; /* rounded-md */
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-lg */
         padding: 1rem; /* p-4 */
         z-index: 100;
         display: flex;
@@ -120,10 +123,10 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-200 antialiased">
+<body class="bg-slate-100 text-slate-800 antialiased">
 
   <div id="app" class="flex flex-col h-screen w-full">
-    <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-slate-100 dark:bg-slate-950">
+    <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-slate-100">
       <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
         <message-item
           v-for="msg in messages"
@@ -133,19 +136,24 @@
           @copy="performCopy"
         ></message-item>
       </div>
-      <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-gray-700/50 dark:bg-black/60 backdrop-blur-xl border-t border-gray-500/20 dark:border-slate-700/30 shadow-top-lg">
-        <div class="relative flex items-center space-x-2">
-          <textarea
-            id="message-input" rows="1" v-model="newMessageText"
-            @keydown.enter.exact.prevent="handleSendMessage" @input="autoGrowTextarea"
-            class="flex-grow resize-none border border-gray-600/30 dark:border-slate-700/40 rounded-xl focus:ring-2 focus:ring-sky-500/80 focus:border-sky-500/80 sm:text-sm bg-gray-800/20 dark:bg-black/40 backdrop-blur-sm text-slate-800 dark:text-slate-100 py-2.5 px-3.5 placeholder-gray-500 dark:placeholder-slate-500 overflow-y-hidden max-h-32"
-            style="line-height: 1.5rem;" placeholder="Type your message or graph command..." :disabled="isLoading"
-          ></textarea>
-          <button type="button" @click="clearInput" :disabled="isLoading" title="Clear input" class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full text-gray-400 dark:text-slate-500 hover:bg-gray-600/30 dark:hover:bg-slate-700/50 focus:outline-none focus:ring-1 focus:ring-gray-500/50 dark:focus:ring-slate-600 disabled:opacity-50 transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9.75L14.25 12m0 0L12 14.25m2.25-2.25L14.25 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-          </button>
-          <button type="submit" :disabled="isLoading || !newMessageText.trim() && !editingMessage" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-sky-500 rounded-full hover:bg-sky-600 focus:ring-2 focus:outline-none focus:ring-sky-400 dark:focus:ring-sky-600 disabled:bg-sky-500/60 disabled:cursor-not-allowed transition-colors" title="Send message">
-            <span v-if="isLoading"><svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-sky-200 dark:fill-sky-700" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></span>
+      <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-slate-200/50 backdrop-blur-xl border-t border-slate-300/50">
+        <div class="relative flex items-end space-x-2">
+          <div class="relative w-full min-w-[200px] flex-grow">
+            <textarea
+              id="message-input" rows="1" v-model="newMessageText"
+              @keydown.enter.exact.prevent="handleSendMessage" @input="autoGrowTextarea"
+              :disabled="isLoading"
+              placeholder="Type your message or graph command..."
+              class="peer w-full resize-none border-b-2 border-slate-300 bg-transparent pt-6 pb-2 font-sans text-sm font-normal text-slate-800 outline outline-0 transition-all placeholder:text-transparent focus:border-zinc-800 focus:outline-0 disabled:resize-none disabled:border-0 disabled:bg-slate-100 max-h-32"
+              style="line-height: 1.5rem;"
+            ></textarea>
+            <label for="message-input"
+              class="after:content[' '] pointer-events-none absolute left-0 -top-2.5 flex h-full w-full select-none !overflow-visible truncate text-[11px] font-normal leading-tight text-slate-500 transition-all after:absolute after:-bottom-0.5 after:block after:w-full after:scale-x-0 after:border-b-2 after:border-zinc-800 after:transition-transform after:duration-300 peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[4.2] peer-placeholder-shown:text-slate-500 peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-zinc-800 peer-focus:after:scale-x-100 peer-focus:after:border-zinc-800 peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-slate-500">
+              Type your message or graph command...
+            </label>
+          </div>
+          <button type="submit" :disabled="isLoading || !newMessageText.trim() && !editingMessage" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-zinc-800 rounded-full hover:bg-zinc-900 focus:ring-2 focus:outline-none focus:ring-zinc-500 disabled:bg-zinc-800/60 disabled:cursor-not-allowed transition-colors" title="Send message">
+            <span v-if="isLoading"><svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-zinc-400" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></span>
             <span v-else><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg></span>
           </button>
         </div>
@@ -157,7 +165,7 @@
     import { createApp, ref, nextTick, watch, onMounted, onUpdated, onBeforeUnmount, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
 
     const API_KEY = "AIzaSyCvtMPDKK4oT_-1RB0MBOYoDwPjme6akoY"; // !!! REPLACE WITH YOUR ACTUAL GEMINI API KEY !!!
-    const MODEL_NAME = "gemini-2.5-flash-lite-preview-06-17";
+    const MODEL_NAME = "gemini-1.5-flash-latest"; 
     const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
 
     const d3GraphManager = {
@@ -167,6 +175,7 @@
         isDarkMode: () => document.documentElement.classList.contains('dark'),
         selectedNodeId: null,
         selectionCallback: null,
+        previousCenterTargetId: null, // Added to track the previously centered node
 
 
         loadFromLocalStorage() {
@@ -196,6 +205,59 @@
         init() {
             this.loadFromLocalStorage();
             this.selectedNodeId = null; 
+            this.previousCenterTargetId = null;
+        },
+        getCenterTargetNode() {
+            if (this.selectedNodeId) {
+                const selectedNode = this.graph.nodes.find(n => n.id === this.selectedNodeId);
+                if (selectedNode) return selectedNode;
+            }
+            const highlightedNodes = this.graph.nodes.filter(n => n.isHighlighted);
+            if (highlightedNodes.length === 1) {
+                return highlightedNodes[0];
+            }
+            return null;
+        },
+        updateCenterForce() {
+            if (!this.simulation || !this.activeContainerElement) return;
+
+            const newTargetNode = this.getCenterTargetNode();
+            const width = this.activeContainerElement.clientWidth || 600;
+            const height = this.activeContainerElement.clientHeight || 350;
+
+            // Unfix the previously centered node if it's no longer the target
+            if (this.previousCenterTargetId) {
+                const oldTarget = this.graph.nodes.find(n => n.id === this.previousCenterTargetId);
+                if (oldTarget && (!newTargetNode || oldTarget.id !== newTargetNode.id)) {
+                    oldTarget.fx = null;
+                    oldTarget.fy = null;
+                }
+            }
+
+            // Fix the new target node to the center
+            if (newTargetNode) {
+                newTargetNode.fx = width / 2;
+                newTargetNode.fy = height / 2;
+                this.previousCenterTargetId = newTargetNode.id;
+            } else {
+                // No specific target, ensure no node is fixed from previous centering
+                 if (this.previousCenterTargetId) { // Check if there was a previous target that needs unpinning
+                    const oldTarget = this.graph.nodes.find(n => n.id === this.previousCenterTargetId);
+                    if (oldTarget) { // Ensure it exists before trying to unpin
+                        oldTarget.fx = null;
+                        oldTarget.fy = null;
+                    }
+                }
+                this.previousCenterTargetId = null;
+            }
+            
+            // The main simulation center force always targets the geometric center of the SVG.
+            this.simulation.force("center", d3.forceCenter(width / 2, height / 2));
+            
+            // Restart simulation if changes might affect positions and it has cooled down
+            if (this.simulation.alpha() < 0.1) {
+                 this.simulation.alpha(0.3).restart();
+            }
         },
         ensureInitialized(containerElement, selectionCallback) {
             if (!containerElement) { console.error("D3: Provided container element is null or undefined."); return; }
@@ -205,9 +267,10 @@
                 const newWidth = containerElement.clientWidth; const newHeight = containerElement.clientHeight;
                 if (newWidth > 0 && newHeight > 0) {
                     const currentViewBox = this.svg.attr("viewBox")?.split(" ").map(Number);
-                    if (!currentViewBox || currentViewBox[2] !== newWidth || currentViewBox[3] !== newHeight) {
+                     if (!currentViewBox || currentViewBox[2] !== newWidth || currentViewBox[3] !== newHeight) {
                         this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
-                        if (this.simulation) { this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart(); }
+                        this.updateCenterForce(); 
+                        if (this.simulation) { this.simulation.alpha(0.3).restart(); }
                     }
                 }
                 return;
@@ -225,21 +288,34 @@
                     }
                 });
 
-            this.simulation = d3.forceSimulation(this.graph.nodes).force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(150)).force("charge", d3.forceManyBody().strength(-300)).force("center", d3.forceCenter(width / 2, height / 2)).on("tick", this.ticked.bind(this));
+            this.simulation = d3.forceSimulation(this.graph.nodes)
+                .force("link", d3.forceLink(this.graph.links).id(d => d.id).distance(150))
+                .force("charge", d3.forceManyBody().strength(-300))
+                .force("center", d3.forceCenter(width / 2, height / 2)) 
+                .on("tick", this.ticked.bind(this));
+
             this.svg.append("g").attr("class", "links"); this.svg.append("g").attr("class", "notes"); this.svg.append("g").attr("class", "labels");
             
             let resizeTimer;
             const handleResize = () => { 
-                if (!this.activeContainerElement || !this.svg) return;
+                if (!this.activeContainerElement || !this.svg || !this.simulation) return;
                 const newWidth = this.activeContainerElement.clientWidth; const newHeight = this.activeContainerElement.clientHeight;
                 if (newWidth > 0 && newHeight > 0) {
                     this.svg.attr("viewBox", `0 0 ${newWidth} ${newHeight}`);
-                    this.simulation.force("center", d3.forceCenter(newWidth / 2, newHeight / 2)).alpha(0.3).restart();
-                } else { this.svg.attr("viewBox", `0 0 600 350`); this.simulation.force("center", d3.forceCenter(300, 175)).alpha(0.3).restart(); }
+                    this.updateCenterForce(); 
+                    this.simulation.alpha(0.3).restart();
+                } else { 
+                    this.svg.attr("viewBox", `0 0 600 350`); 
+                    // No specific target node on invalid resize, default center force
+                    this.simulation.force("center", d3.forceCenter(300, 175)).alpha(0.3).restart(); 
+                }
             };
             const debouncedResize = () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(handleResize, 150); };
             this.resizeObserver = new ResizeObserver(debouncedResize); this.resizeObserver.observe(containerElement);
-            if (width > 0 && height > 0) handleResize();
+            if (width > 0 && height > 0) { 
+                this.updateCenterForce(); 
+                if (this.simulation) this.simulation.alpha(0.3).restart();
+            }
             this.update();
         },
         destroyVisualization() {
@@ -249,6 +325,7 @@
             this.activeContainerElement = null;
             this.selectionCallback = null; 
             this.selectedNodeId = null;
+            this.previousCenterTargetId = null;
         },
         ticked() {
             if (!this.svg || !this.simulation) return;
@@ -272,13 +349,13 @@
         update() {
             if (!this.svg || !this.simulation || !this.activeContainerElement) return;
             this.simulation.nodes(this.graph.nodes); 
-            this.simulation.force("link").links(this.graph.links); // Ensure links are updated with current graph.links
+            this.simulation.force("link").links(this.graph.links); 
             
             const defaultFill = this.isDarkMode()?"#334155":"#fefce8"; 
             const defaultStroke = this.isDarkMode()?"#64748b":"#facc15"; 
-            const highlightedFill = this.isDarkMode()?"#60a5fa":"#bfdbfe"; 
-            const highlightedStroke = this.isDarkMode()?"#93c5fd":"#60a5fa"; 
-            const selectedStroke = this.isDarkMode()?"#38bdf8":"#0ea5e9"; 
+            const highlightedFill = this.isDarkMode()?"#60a5fa":"#e4e4e7"; // zinc-200
+            const highlightedStroke = this.isDarkMode()?"#93c5fd":"#a1a1aa"; // zinc-400
+            const selectedStroke = this.isDarkMode()?"#a1a1aa":"#27272a"; // zinc-400 / zinc-800
 
 
             const link = this.svg.select("g.links").selectAll("line").data(this.graph.links, d=>`${d.source.id||d.source}-${d.target.id||d.target}`);
@@ -309,11 +386,31 @@
             labels.enter().append("text").attr("class", "note-label").merge(labels)
                 .text(d=>d.id.length>18?d.id.substring(0,15)+"...":d.id).style("fill", this.isDarkMode()?"#f3f4f6":"#1f2937");
             
+            this.updateCenterForce(); 
             this.simulation.alpha(0.3).restart();
         },
         dragStarted(ev,d){if(!ev.active&&this.simulation)this.simulation.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y;},
         dragged(ev,d){d.fx=ev.x;d.fy=ev.y;},
-        dragEnded(ev,d){if(!ev.active&&this.simulation)this.simulation.alphaTarget(0);},
+        dragEnded(ev,d){
+            if(!ev.active && this.simulation) this.simulation.alphaTarget(0);
+
+            const currentCenterTarget = this.getCenterTargetNode();
+            const width = this.activeContainerElement ? (this.activeContainerElement.clientWidth || 600) : 600;
+            const height = this.activeContainerElement ? (this.activeContainerElement.clientHeight || 350) : 350;
+
+            if (d === currentCenterTarget) { // If the node just dragged *is* the one that should be centered
+                d.fx = width / 2;   // Re-pin it to the center
+                d.fy = height / 2;
+            } else { // If the node just dragged is *not* the center target
+                d.fx = null;        // Standard unpin after drag
+                d.fy = null;
+            }
+
+            if (this.simulation) {
+                // Re-heat simulation to reflect fx/fy changes and allow other nodes to resettle
+                this.simulation.alpha(0.3).restart(); 
+            }
+        },
         addNode(id,body=""){if(!id||typeof id!=='string'||id.trim()==="")return{success:false,message:"ID empty."};id=id.trim();if(!this.graph.nodes.find(n=>n.id===id)){this.graph.nodes.push({id:id,body:body||"",isHighlighted:false});this.update();this.saveToLocalStorage();return{success:true,message:`Note "${id}" created.`};}return{success:false,message:`Note "${id}" exists.`};},
         addLink(srcId,tgtId){if(!srcId||!tgtId)return{success:false,message:"IDs required."};srcId=srcId.trim();tgtId=tgtId.trim();if(srcId===tgtId)return{success:false,message:"Self-link."};const sn=this.graph.nodes.find(n=>n.id===srcId),tn=this.graph.nodes.find(n=>n.id===tgtId);if(!sn)return{success:false,message:`Src "${srcId}" missing.`};if(!tn)return{success:false,message:`Tgt "${tgtId}" missing.`};const le=this.graph.links.find(l=>(l.source.id===srcId&&l.target.id===tgtId)||(l.source.id===tgtId&&l.target.id===srcId));if(!le){this.graph.links.push({source:srcId,target:tgtId});this.update();this.saveToLocalStorage();return{success:true,message:`Linked "${srcId}"-"${tgtId}".`};}return{success:false,message:`Link exists.`};},
         deleteNode(id){
@@ -322,17 +419,24 @@
             if(!ne)return{success:false,message:`Note "${id}" missing.`};
             this.graph.nodes=this.graph.nodes.filter(n=>n.id!==id);
             this.graph.links=this.graph.links.filter(l=>(l.source.id||l.source)!==id&&(l.target.id||l.target)!==id);
+            
+            let triggerUpdate = true;
             if (this.selectedNodeId === id) {
-                this.setSelectedNode(null); 
+                this.setSelectedNode(null); // This already calls update()
+                triggerUpdate = false; 
             }
-            this.update();
+            if (this.previousCenterTargetId === id) { // If the deleted node was the one fixed to center
+                this.previousCenterTargetId = null; // Clear it, updateCenterForce will handle general centering
+            }
+
+            if(triggerUpdate) this.update();
+
             this.saveToLocalStorage();
             return{success:true,message:`Note "${id}" deleted.`};
         },
         editNode(currentId, newIdParam, newBodyParam) {
             currentId = currentId ? currentId.trim() : null;
             const newId = newIdParam ? newIdParam.trim() : null;
-            // newBodyParam can be undefined (no change), empty string (clear body), or content.
 
             if (!currentId) {
                 return { success: false, message: "Current node ID is required to edit." };
@@ -342,35 +446,36 @@
             if (nodeIndex === -1) {
                 return { success: false, message: `Node "${currentId}" not found.` };
             }
-            const node = this.graph.nodes[nodeIndex]; // Get a direct reference to the node object
+            const node = this.graph.nodes[nodeIndex]; 
 
             let idChanged = false;
             let bodyChanged = false;
-            const originalId = node.id; // Store original ID for link updates & selection check
+            const originalId = node.id; 
 
-            // Handle ID change
             if (newId && newId !== originalId) {
                 if (this.graph.nodes.some(n => n.id === newId)) {
                     return { success: false, message: `Cannot rename to "${newId}": ID already exists.` };
                 }
-                node.id = newId; // Update node's ID directly on the object in the graph
+                node.id = newId; 
                 idChanged = true;
 
-                // Update string IDs in the links array
                 this.graph.links.forEach(link => {
                     if (link.source === originalId) {
                         link.source = newId;
+                    } else if (typeof link.source === 'object' && link.source.id === originalId) { 
+                        link.source.id = newId;
                     }
                     if (link.target === originalId) {
                         link.target = newId;
+                    } else if (typeof link.target === 'object' && link.target.id === originalId) { 
+                        link.target.id = newId;
                     }
                 });
+                if (this.previousCenterTargetId === originalId) { // If renamed node was centered
+                    this.previousCenterTargetId = newId;
+                }
             }
 
-            // Handle body change
-            // typeof newBodyParam === 'string' means an explicit value for body was passed by the LLM.
-            // This includes "" (empty string) to clear the body.
-            // If newBodyParam is undefined (LLM didn't include it), body is not changed.
             if (typeof newBodyParam === 'string') {
                 if (node.body !== newBodyParam) {
                     node.body = newBodyParam;
@@ -382,30 +487,23 @@
                 return { success: true, message: `Node "${originalId}" was not changed (no new ID or body provided, or values were the same).` };
             }
             
-            this.update(); // Re-render D3. This will use the updated node.id and new link string IDs.
-                        // Simulation will be updated with new node IDs and link string IDs.
-            this.saveToLocalStorage();
-
-            // If the currently selected node was the one edited:
+            let selectionNeedsUpdate = false;
             if (this.selectedNodeId === originalId) {
                 if (idChanged) {
-                    this.selectedNodeId = newId; // Update the manager's tracked selected ID
+                    this.selectedNodeId = newId; 
                 }
-                // Whether ID changed or just body, if it was selected, notify the callback with the *updated* node object
-                if (this.selectionCallback) {
-                    // Find the node again by its (potentially new) ID to ensure we pass the latest reference from the graph array
-                    const updatedNodeForCallback = this.graph.nodes.find(n => n.id === this.selectedNodeId);
-                    this.selectionCallback(updatedNodeForCallback); 
-                }
+                selectionNeedsUpdate = true;
             } else if (this.selectedNodeId === newId && idChanged) { 
-                // This case handles if some other node was selected, but its ID happened to be the `newId`
-                // we just renamed a node *to*. Unlikely, but good to ensure selection card shows the *correct* node.
-                 if (this.selectionCallback) {
-                    const selectedNodeForCallback = this.graph.nodes.find(n => n.id === this.selectedNodeId);
-                    this.selectionCallback(selectedNodeForCallback); 
-                }
+                 selectionNeedsUpdate = true;
             }
+            
+            this.update(); // This will call updateCenterForce
+            this.saveToLocalStorage();
 
+            if (selectionNeedsUpdate && this.selectionCallback) {
+                 const updatedNodeForCallback = this.graph.nodes.find(n => n.id === this.selectedNodeId);
+                 this.selectionCallback(updatedNodeForCallback);
+            }
 
             let message = `Node "${originalId}" updated.`;
             if (idChanged && newId) message += ` Renamed to "${newId}".`;
@@ -417,8 +515,9 @@
         clearGraphData(){
             this.graph.nodes=[];
             this.graph.links=[];
+            this.previousCenterTargetId = null; // Clear fixed node tracker
             this.setSelectedNode(null); 
-            this.update();
+            // this.update(); // setSelectedNode(null) calls update()
             this.saveToLocalStorage();
             return{success:true,message:"Graph data cleared."};
         }
@@ -463,15 +562,13 @@
               try { if (typeof renderMathInElement === 'function') renderMathInElement(contentRef.value, {delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError: false}); } catch (e) { console.warn("KaTeX:", e); }
             }
             if (props.message.isGraphDisplaySlot && displayedNodeDetails.value && contentRef.value?.querySelector('.node-details-card-body')) {
-                // If KaTeX is needed inside the node card, render it here too.
-                // For now, assuming standard Markdown is enough for the card.
+                // KaTeX for card handled by watch(selectedRawNode)
             }
           });
         };
         watch(() => props.message.parts[0].text, (nt) => { if (!props.message.isGraphDisplaySlot) updateContentAndRenderMath(nt); }, { immediate: true });
         watch(() => props.message.isStreaming, (is,was) => { if (was&&!is&&!props.message.isGraphDisplaySlot) updateContentAndRenderMath(props.message.parts[0].text); });
         
-        // Watch for changes in selectedRawNode to re-render KaTeX if node body changes while selected
         watch(selectedRawNode, (newNodeData) => {
             if (newNodeData && newNodeData.body && graphHostElement.value) {
                 nextTick(() => {
@@ -507,9 +604,8 @@
                 darkModeObserver = setupGraphObserver();
             }
         });
-        onUpdated(() => { // ensureInitialized might be called multiple times if component updates for other reasons
+        onUpdated(() => { 
             if (props.message.isGraphDisplaySlot && graphHostElement.value) {
-                 // Pass the callback every time, ensureInitialized handles if it's the same container
                 d3GraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange);
                 if(!darkModeObserver) darkModeObserver = setupGraphObserver();
             } else if (!props.message.isGraphDisplaySlot && darkModeObserver) {
@@ -519,7 +615,7 @@
         onBeforeUnmount(() => {
             if (darkModeObserver) { darkModeObserver.disconnect(); darkModeObserver = null; }
             if (props.message.isGraphDisplaySlot && graphHostElement.value && d3GraphManager.activeContainerElement === graphHostElement.value) {
-                d3GraphManager.destroyVisualization(); // This will clear the callback in d3Manager
+                d3GraphManager.destroyVisualization(); 
                  selectedRawNode.value = null; 
             }
         });
@@ -538,12 +634,12 @@
         </div>
         <div v-else :class="['w-full flex group relative', isUser ? 'justify-end' : 'justify-start']" :data-message-id="message.id">
           <div :class="['max-w-[85%] sm:max-w-[80%]']">
-              <div ref="contentRef" :class="['rendered-content prose prose-sm dark:prose-invert max-w-none', 'prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5', message.isSystemToolResponse ? 'p-2.5 text-xs italic bg-slate-200 dark:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700' : (message.isError ? 'p-2.5 border border-red-400/50 dark:border-red-600/50 rounded-lg bg-red-100/70 dark:bg-red-900/40 text-red-700 dark:text-red-300' : (isUser ? 'text-slate-700 dark:text-slate-200 text-right' : 'text-slate-800 dark:text-slate-100 text-left'))]" v-html="parsedContent"></div>
+              <div ref="contentRef" :class="['rendered-content prose prose-sm max-w-none', 'prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5', message.isSystemToolResponse ? 'p-2.5 text-xs italic bg-slate-200 rounded-lg text-slate-500 border border-slate-300' : (message.isError ? 'p-2.5 border border-red-400/50 rounded-lg bg-red-100/70 text-red-700' : (isUser ? 'text-slate-700 text-right' : 'text-slate-800 text-left'))]" v-html="parsedContent"></div>
               <span v-if="message.isStreaming && !message.isError && !message.isSystemToolResponse" :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
           </div>
           <div v-if="!message.isError && !message.isSystemToolResponse && !message.isGraphDisplaySlot && (isUser || (!message.isStreaming && message.role === 'model'))" :class="['absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150', isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2']">
-              <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 shadow-md focus:outline-none focus:ring-1 focus:ring-sky-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></button>
-              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 dark:bg-slate-700/80 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-500 dark:text-slate-300 shadow-md focus:outline-none focus:ring-1 focus:ring-sky-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg></button>
+              <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></button>
+              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg></button>
           </div>
         </div>
       `
@@ -637,8 +733,7 @@
         const fetchBotResponse=async(chatHist)=>{const botMsgId=addOrUpdateMessage('model','',null,true);isLoading.value=true;const payload={contents:chatHist,tools:geminiTools,};try{const resp=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const msgIdx=messages.value.findIndex(m=>m.id===botMsgId);if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;messages.value[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){messages.value[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;return;}const parts=data.candidates[0].content.parts;let textResp="",funcCall=null;for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall){funcCall=p.functionCall;break;}}if(funcCall){messages.value[msgIdx].isStreaming=false;messages.value[msgIdx].parts[0].text=`<i>Tool: ${funcCall.name}...</i>`;messages.value[msgIdx].originalMarkdown=`[Tool: ${funcCall.name}]`;const funcRes=handleGraphFunctionCall(funcCall.name,funcCall.args);addOrUpdateMessage('system',`<b>Tool: ${funcCall.name}</b><br/>${funcRes.message.replace(/\n/g,'<br>')}`,null,false,!funcRes.success,`[Res: ${funcRes.message}]`,true);const newHist=[...chatHist,{role:'model',parts:[{functionCall:funcCall}]},{role:'tool',parts:[{functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:funcRes}}}]}];await fetchBotResponse(newHist);}else if(textResp.trim()!==""){messages.value[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];messages.value[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);messages.value[msgIdx].parts[0].text=textResp;messages.value[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false;}},15);}else if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";messages.value[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;messages.value[msgIdx].isError=true;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}else{messages.value[msgIdx].parts[0].text=`<p>Info:</p><p>Empty AI response.</p>`;messages.value[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=messages.value.findIndex(m=>m.id===botMsgId);if(mIdx>-1){messages.value[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;messages.value[mIdx].isError=true;messages.value[mIdx].isStreaming=false;}isLoading.value=false;}finally{const fIdx=messages.value.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&messages.value[fIdx].isStreaming){if(messages.value[fIdx].parts[0].text===''&&!messages.value[fIdx].isError)messages.value[fIdx].parts[0].text='<p>[Stream Error]</p>';messages.value[fIdx].isStreaming=false;}if(!messages.value.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
         const startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('message-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
         const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
-        const clearInput=()=>{newMessageText.value='';editingMessage.value=null;const ta=document.getElementById('message-input');if(ta){ta.style.height='auto';ta.focus();}};
-
+        
         onMounted(() => {
             d3GraphManager.init();
             if (d3GraphManager.graph.nodes.length > 0 || d3GraphManager.graph.links.length > 0) {
@@ -658,7 +753,7 @@
             addOrUpdateMessage('model', welcomeMessage, null, false, false, welcomeMessage);
         });
 
-        return { messages, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, clearInput, chatContainerRef, editingMessage, autoGrowTextarea };
+        return { messages, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, chatContainerRef, editingMessage, autoGrowTextarea };
       }
     }).mount('#app');
   </script>
