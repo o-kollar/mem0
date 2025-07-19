@@ -132,7 +132,6 @@
     <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-slate-100">
       <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
         
-        <!-- FIX: The message-item component loop is restored here -->
         <message-item
           v-for="msg in messages"
           :key="msg.id"
