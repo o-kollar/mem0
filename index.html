@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>0s
-  </title>
+  <title>M8</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -43,97 +42,105 @@
     .dark #chat-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.1); }
     #chat-container::-webkit-scrollbar-thumb:hover { background-color: rgba(0,0,0,0.2); }
     .dark #chat-container::-webkit-scrollbar-thumb:hover { background-color: rgba(255,255,255,0.2); }
-    .link { stroke: #9ca3af; stroke-width: 1.5px; }
-    .dark .link { stroke: #6b7280; }
-    .sticky-note { rx: 5; ry: 5; cursor: pointer; }
-    .note-label { pointer-events: none; font-size: 12px; text-anchor: middle; dominant-baseline: central; fill: #1f2937; }
-    .dark .note-label { fill: #f3f4f6; }
+    #tab-container::-webkit-scrollbar { height: 4px; }
+    #tab-container::-webkit-scrollbar-track { background: transparent; }
+    #tab-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
+    .dark #tab-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
     .graph-host-container {
-        position: relative; /* For positioning the details card */
-        height: 350px;
-        width: 100%;
-        border-radius: 0.5rem;
-        border: 1px solid #e2e8f0; /* slate-200 */
-        margin-top: 1rem;
-        margin-bottom: 1rem;
-        transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out;
-        overflow: hidden;
+        position: relative; height: 350px; width: 100%; border-radius: 0.5rem;
+        border: 1px solid #e2e8f0; margin-top: 1rem; margin-bottom: 1rem;
+        transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out; overflow: hidden;
     }
+    .dark .graph-host-container { border-color: #334155; }
     .node-details-card {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 280px;
-        max-height: calc(100% - 20px);
-        background-color: #fff;
-        border: 1px solid #e2e8f0; /* slate-200 */
-        border-radius: 0.375rem; /* rounded-md */
-        padding: 1rem; /* p-4 */
-        z-index: 100;
-        display: flex;
-        flex-direction: column;
+        position: absolute; top: 10px; right: 10px; width: 280px; max-height: calc(100% - 20px);
+        background-color: #fff; border: 1px solid #e2e8f0; border-radius: 0.375rem;
+        padding: 1rem; z-index: 100; display: flex; flex-direction: column;
     }
-    .dark .node-details-card {
-        background-color: #334155; /* slate-700 */
-        border-color: #475569; /* slate-600 */
-        color: #f1f5f9; /* slate-100 */
-    }
+    .dark .node-details-card { background-color: #334155; border-color: #475569; color: #f1f5f9; }
     .node-details-card h3 {
-        margin-top: 0;
-        margin-bottom: 0.75rem; /* mb-3 */
-        font-size: 0.875rem; /* text-sm */
-        font-weight: 600; /* font-semibold */
-        border-bottom: 1px solid #e2e8f0; /* slate-200 */
-        padding-bottom: 0.5rem; /* pb-2 */
-        color: #1e293b; /* slate-800 */
+        margin-top: 0; margin-bottom: 0.75rem; font-size: 0.875rem; font-weight: 600;
+        border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem; color: #1e293b;
     }
-    .dark .node-details-card h3 {
-        border-bottom-color: #475569; /* slate-600 */
-        color: #f1f5f9; /* slate-100 */
-    }
-    .node-details-card-body {
-        flex-grow: 1;
-        overflow-y: auto;
-        font-size: 0.875rem; /* text-sm */
-        line-height: 1.4;
-    }
-     /* Custom scrollbar for card body */
+    .dark .node-details-card h3 { border-bottom-color: #475569; color: #f1f5f9; }
+    .node-details-card-body { flex-grow: 1; overflow-y: auto; font-size: 0.875rem; line-height: 1.4; }
     .node-details-card-body::-webkit-scrollbar { width: 5px; }
     .node-details-card-body::-webkit-scrollbar-track { background: transparent; }
     .node-details-card-body::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.2); border-radius: 10px; }
     .dark .node-details-card-body::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
-
     .node-details-card button.close-btn {
-        position: absolute;
-        top: 0.5rem; /* p-2 */
-        right: 0.5rem; /* p-2 */
-        background: transparent;
-        border: none;
-        font-size: 1.5rem; /* text-2xl-ish */
-        line-height: 1;
-        cursor: pointer;
-        color: #64748b; /* slate-500 */
-        padding: 0.25rem;
+        position: absolute; top: 0.5rem; right: 0.5rem; background: transparent; border: none;
+        font-size: 1.5rem; line-height: 1; cursor: pointer; color: #64748b; padding: 0.25rem;
     }
-    .dark .node-details-card button.close-btn {
-        color: #94a3b8; /* slate-400 */
-    }
-    .node-details-card button.close-btn:hover {
-        color: #1e293b; /* slate-800 */
-    }
-    .dark .node-details-card button.close-btn:hover {
-        color: #f1f5f9; /* slate-100 */
-    }
+    .dark .node-details-card button.close-btn { color: #94a3b8; }
+    .node-details-card button.close-btn:hover { color: #1e293b; }
+    .dark .node-details-card button.close-btn:hover { color: #f1f5f9; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased">
+<body class="bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-200 antialiased">
 
   <div id="app" class="flex flex-col h-screen w-full">
-    <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-slate-100">
+    <!-- M8 Header with Integrated Tabs -->
+    <header class="flex-shrink-0   backdrop-blur-xl flex items-center justify-between  px-3">
+        <!-- Logo -->
+        <h1 @click="openSettingsModal" class="text-xl font-bold text-zinc-800 dark:text-zinc-200 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0 pr-4">M8</h1>
+
+        <!-- Tabs Container -->
+        <div class="flex-1 flex items-center min-w-0">
+            <div class="flex-1 min-w-0 overflow-x-auto" id="tab-container">
+                <ul class="relative flex p-1 list-none rounded-lg" role="list">
+                    <li v-for="tab in tabs" :key="tab.id" class="z-10 flex-auto text-center">
+                        <a @click="selectTab(tab.id)"
+                           :class="[
+                               'z-10 flex items-center justify-center w-full px-3 py-1.5 text-sm transition-all ease-in-out border-0 rounded-md cursor-pointer whitespace-nowrap',
+                               activeTabId === tab.id
+                                   ? 'bg-white shadow text-slate-800 font-medium dark:bg-slate-700 dark:text-slate-100'
+                                   : 'text-slate-600 dark:text-slate-300 hover:bg-white/60 dark:hover:bg-slate-700/50'
+                           ]"
+                           role="tab" :aria-selected="activeTabId === tab.id">
+
+                            <!-- Tool Use Indicator -->
+                            <div v-if="tab.activeToolState"
+                                 class="rounded-full flex items-center py-0.5 px-2.5 border text-sm transition-all shadow-sm"
+                                 :class="{
+                                    'bg-yellow-100 dark:bg-yellow-500/20 border-yellow-200 dark:border-yellow-500/30 text-yellow-800 dark:text-yellow-300 animate-pulse': tab.activeToolState === 'running',
+                                    'bg-green-100 dark:bg-green-500/20 border-green-200 dark:border-green-500/30 text-green-800 dark:text-green-300': tab.activeToolState === 'success'
+                                 }"
+                                 :title="'Tool: ' + tab.activeToolName">
+                              <div class="block h-2 w-2 rounded-full mr-2"
+                                   :class="{
+                                      'bg-yellow-500': tab.activeToolState === 'running',
+                                      'bg-green-500': tab.activeToolState === 'success'
+                                   }"></div>
+                              <span class="truncate">{{ tab.activeToolName }}</span>
+                            </div>
+
+                            <!-- Tab name (when no tool is active) -->
+                            <span v-else class="truncate">{{ tab.name }}</span>
+                            
+                            <button @click.stop="closeTab(tab.id)" v-if="tabs.length > 1"
+                                    class="ml-2 -mr-1 p-0.5 rounded-full text-slate-500 hover:bg-slate-400/20 dark:text-slate-400 dark:hover:bg-slate-600/50">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button @click="addNewTab" class="ml-2 p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 flex-shrink-0" title="New Chat">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            </button>
+        </div>
+        
+        <div class="flex-shrink-0 pl-4"></div>
+    </header>
+
+
+    <div id="chat-ui-area" class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-800">
       <div ref="chatContainerRef" id="chat-container" class="flex-1 p-4 sm:p-6 overflow-y-auto flex flex-col space-y-5">
         
         <message-item
-          v-for="msg in messages"
+          v-if="activeTab"
+          v-for="msg in activeTab.messages"
           :key="msg.id"
           :message="msg"
           @edit="startEdit"
@@ -141,32 +148,264 @@
         ></message-item>
         
       </div>
-      <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 bg-slate-200/50 backdrop-blur-xl border-t border-slate-300/50">
+      <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
         <div class="relative flex items-end space-x-2">
           <div class="relative w-full min-w-[200px] flex-grow">
             <textarea
               id="-input" rows="1" v-model="newMessageText"
               @keydown.enter.exact.prevent="handleSendMessage" @input="autoGrowTextarea"
               :disabled="isLoading"
-              placeholder="Type your message or graph command..."
-              class="peer w-full resize-none border-b-2 border-slate-300 bg-transparent pt-6 pb-2 font-sans text-sm font-normal text-slate-800 outline outline-0 transition-all placeholder:text-transparent focus:border-zinc-800 focus:outline-0 disabled:resize-none disabled:border-0 disabled:bg-slate-100 max-h-32"
+              placeholder="Message M8..."
+              class="peer w-full resize-none border-b-2 border-slate-300 dark:border-slate-600 bg-transparent pt-6 pb-2 font-sans text-sm font-normal text-slate-800 dark:text-slate-200 outline outline-0 transition-all placeholder:text-transparent focus:border-zinc-800 dark:focus:border-zinc-300 focus:outline-0 disabled:resize-none disabled:border-0 disabled:bg-white dark:disabled:bg-slate-800 max-h-32"
               style="line-height: 1.5rem;"
             ></textarea>
             <label for="-input"
-              class="after:content[' '] pointer-events-none absolute left-0 -top-2.5 flex h-full w-full select-none !overflow-visible truncate text-[11px] font-normal leading-tight text-slate-500 transition-all after:absolute after:-bottom-0.5 after:block after:w-full after:scale-x-0 after:border-b-2 after:border-zinc-800 after:transition-transform after:duration-300 peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[4.2] peer-placeholder-shown:text-slate-500 peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-zinc-800 peer-focus:after:scale-x-100 peer-focus:after:border-zinc-800 peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-slate-500">
-              Type your message or graph command...
+              class="after:content[' '] pointer-events-none absolute left-0 -top-2.5 flex h-full w-full select-none !overflow-visible truncate text-[11px] font-normal leading-tight text-slate-500 dark:text-slate-400 transition-all after:absolute after:-bottom-0.5 after:block after:w-full after:scale-x-0 after:border-b-2 after:border-zinc-800 dark:after:border-zinc-300 after:transition-transform after:duration-300 peer-placeholder-shown:text-sm peer-placeholder-shown:leading-[4.2] peer-placeholder-shown:text-slate-500 peer-focus:text-[11px] peer-focus:leading-tight peer-focus:text-zinc-800 dark:peer-focus:text-zinc-300 peer-focus:after:scale-x-100 peer-focus:after:border-zinc-800 dark:peer-focus:after:border-zinc-300 peer-disabled:text-transparent peer-disabled:peer-placeholder-shown:text-slate-500">
+              Message M8...
             </label>
           </div>
-          <button type="submit" :disabled="isLoading || !newMessageText.trim() && !editingMessage" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-zinc-800 rounded-full hover:bg-zinc-900 focus:ring-2 focus:outline-none focus:ring-zinc-500 disabled:bg-zinc-800/60 disabled:cursor-not-allowed transition-colors" title="Send message">
-            <span v-if="isLoading"><svg aria-hidden="true" class="w-5 h-5 text-white animate-spin fill-zinc-400" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></span>
+          <button type="submit" :disabled="isLoading || !newMessageText.trim() && !editingMessage" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-zinc-800 rounded-full hover:bg-zinc-900 focus:ring-2 focus:outline-none focus:ring-zinc-500 disabled:bg-zinc-800/60 disabled:cursor-not-allowed transition-colors dark:bg-zinc-300 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:disabled:bg-zinc-300/60" title="Send message">
+            <span v-if="isLoading"><svg aria-hidden="true" class="w-5 h-5 animate-spin fill-zinc-400 dark:fill-zinc-500" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></span>
             <span v-else><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg></span>
           </button>
         </div>
       </form>
     </div>
+
+    <!-- Settings Modal -->
+    <div v-if="showSettingsModal" @click.self="closeSettingsModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 transition-opacity">
+      <div class="bg-slate-50 dark:bg-slate-800 rounded-lg shadow-xl w-full max-w-md p-6 relative">
+        <button @click="closeSettingsModal" class="absolute top-2 right-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 text-2xl leading-none font-bold p-2">×</button>
+        <h2 class="text-lg font-bold text-zinc-800 dark:text-zinc-200 mb-4 border-b border-slate-300 dark:border-slate-600 pb-2">Settings</h2>
+        <form @submit.prevent="saveSettings">
+          <div class="space-y-4">
+            <div>
+              <label for="model-select" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">AI Model</label>
+              <select id="model-select" v-model="settingsModel" class="w-full p-2 border border-slate-300 rounded-md focus:ring-zinc-500 focus:border-zinc-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+                <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+              </select>
+            </div>
+            <div>
+              <label for="api-key-input" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gemini API Key</label>
+              <input type="password" id="api-key-input" v-model="settingsApiKey" placeholder="Enter your Gemini API Key" class="w-full p-2 border border-slate-300 rounded-md focus:ring-zinc-500 focus:border-zinc-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Get a key from Google AI Studio. It's stored in your browser's local storage.</p>
+            </div>
+          </div>
+          <div class="mt-6 flex justify-end">
+            <button type="submit" class="px-4 py-2 bg-zinc-800 text-white rounded-md hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 dark:bg-zinc-700 dark:hover:bg-zinc-600">Save & Close</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
-  <script type="module" src="./script.js"></script>
+  <script type="module">
+    import { createApp, ref, nextTick, watch, onMounted, onUnmounted, computed } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+    
+    // --- MessageItem Component (no changes) ---
+    const MessageItem = {
+        props: ['message'], emits: ['edit', 'copy'],
+        setup(props, { emit }) {
+            const contentRef = ref(null), parsedContent = ref(''), isUser = props.message.role === 'user';
+            const graphHostElement = ref(null), isDarkMode = ref(visGraphManager.isDarkMode());
+            const selectedRawNode = ref(null);
+            const handleNodeSelectionChange = (nodeData) => { selectedRawNode.value = nodeData; };
+            const displayedNodeDetails = computed(() => { if (selectedRawNode.value && selectedRawNode.value.body && selectedRawNode.value.body.trim() !== '') { return { id: selectedRawNode.value.label, parsedBody: marked.parse(selectedRawNode.value.body) }; } return null; });
+            const closeNodeCard = () => { visGraphManager.setSelectedNode(null); };
+            const updateContentAndRenderMath = (text) => {
+              if (props.message.isGraphDisplaySlot) { parsedContent.value = ''; return; }
+              let html; if (props.message.isError) html = text; else if (props.message.role === 'model' || props.message.isSystemToolResponse) html = marked.parse(text || (props.message.isStreaming ? ' ' : '')); else html = marked.parse(text || '');
+              if (props.message.isSystemToolResponse) { html = `<div class="p-2.5 text-xs italic bg-slate-200 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600/50">${html}</div>`; } else if (props.message.isError) { html = `<div class="p-2.5 border border-red-400/50 rounded-lg bg-red-100/70 text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:border-red-500/50">${html}</div>`; } else if (isUser) { html = `<div class="text-slate-700 dark:text-slate-200 text-right">${html}</div>`; } else { html = `<div class="text-slate-800 dark:text-slate-200 text-left">${html}</div>`; }
+              parsedContent.value = html;
+              nextTick(() => { if (contentRef.value && !props.message.isError && (props.message.role === 'model' || (text && text.includes('$')))) { try { if (typeof renderMathInElement === 'function') renderMathInElement(contentRef.value, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { console.warn("KaTeX:", e); } } });
+            };
+            watch(() => props.message.parts[0].text, (nt) => { if (!props.message.isGraphDisplaySlot) updateContentAndRenderMath(nt); }, { immediate: true });
+            watch(() => props.message.isStreaming, (is, was) => { if (was && !is && !props.message.isGraphDisplaySlot) updateContentAndRenderMath(props.message.parts[0].text); });
+            watch(selectedRawNode, (newNodeData) => { if (newNodeData && newNodeData.body && graphHostElement.value) { nextTick(() => { const cardBody = graphHostElement.value.querySelector('.node-details-card-body'); if (cardBody && typeof renderMathInElement === 'function' && newNodeData.body.includes('$')) { try { renderMathInElement(cardBody, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { console.warn("KaTeX in card:", e); } } }); } }, { deep: true });
+            const handleEdit = () => emit('edit', props.message), handleCopy = () => emit('copy', props.message);
+            onMounted(() => { if (props.message.isGraphDisplaySlot && graphHostElement.value) { isDarkMode.value = visGraphManager.isDarkMode(); visGraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange); } });
+            onUnmounted(() => { if (props.message.isGraphDisplaySlot && visGraphManager.activeContainerElement === graphHostElement.value) { visGraphManager.destroyVisualization(); selectedRawNode.value = null; } });
+            return { isUser, handleEdit, handleCopy, contentRef, parsedContent, message: props.message, graphHostElement, isDarkMode, displayedNodeDetails, closeNodeCard };
+        },
+        template: `
+        <div v-if="message.isGraphDisplaySlot" class="w-full my-3">
+            <div ref="graphHostElement" class="graph-host-container bg-white/50 dark:bg-slate-800/50">
+                <div v-if="displayedNodeDetails" class="node-details-card" :class="{ 'dark': isDarkMode }">
+                    <h3>{{ displayedNodeDetails.id }}</h3>
+                    <div class="node-details-card-body prose prose-sm dark:prose-invert max-w-none" v-html="displayedNodeDetails.parsedBody"></div>
+                    <button @click="closeNodeCard" class="close-btn" title="Close entry details">×</button>
+                </div>
+            </div>
+        </div>
+        <div v-else :class="['w-full flex group relative', isUser ? 'justify-end' : 'justify-start']" :data-message-id="message.id">
+          <div :class="['max-w-[85%] sm:max-w-[80%]']">
+              <div ref="contentRef" class="rendered-content prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5" v-html="parsedContent"></div>
+              <span v-if="message.isStreaming && !message.isError && !message.isSystemToolResponse" :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
+          </div>
+          <div v-if="!message.isError && !message.isSystemToolResponse && !message.isGraphDisplaySlot && (isUser || (!message.isStreaming && message.role === 'model'))" :class="['absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150', isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2']">
+              <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></button>
+              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg></button>
+          </div>
+        </div>
+      `
+    };
+    
+    // --- vis.js Graph Manager (no changes) ---
+    const visGraphManager = {
+        network: null, nodes: new vis.DataSet(), edges: new vis.DataSet(), activeContainerElement: null,
+        selectionCallback: null, isDarkMode: () => document.documentElement.classList.contains('dark'),
+        getOptions(isDark) {
+            const fontColor = isDark ? '#e2e8f0' : '#1e293b'; const nodeBg = isDark ? '#334155' : '#f8fafc'; const nodeBorder = isDark ? '#64748b' : '#cbd5e1'; const edgeColor = isDark ? '#64748b' : '#94a3b8';
+            return { autoResize: true, height: '100%', width: '100%', nodes: { shape: 'box', borderWidth: 1.5, color: { background: nodeBg, border: nodeBorder, highlight: { background: isDark ? '#475569' : '#e2e8f0', border: isDark ? '#94a3b8' : '#64748b' } }, font: { color: fontColor, size: 14, face: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }, margin: { top: 10, right: 15, bottom: 10, left: 15 }, widthConstraint: { minimum: 100, maximum: 200 }, shapeProperties: { borderRadius: 4 } }, edges: { color: { color: edgeColor, highlight: isDark ? '#cbd5e1' : '#475569' }, arrows: { to: { enabled: false } }, smooth: { enabled: true, type: 'dynamic' } }, physics: { enabled: true, barnesHut: { gravitationalConstant: -10000, centralGravity: 0.1, springLength: 150, springConstant: 0.05, damping: 0.1, avoidOverlap: 0.2 }, solver: 'barnesHut', stabilization: { iterations: 1000, fit: true } }, interaction: { dragNodes: true, dragView: true, zoomView: true, hover: true, tooltipDelay: 200, navigationButtons: false } };
+        },
+        loadTabData(graphData) { this.nodes.clear(); this.edges.clear(); if (graphData && graphData.nodes) this.nodes.add(graphData.nodes); if (graphData && graphData.edges) this.edges.add(graphData.edges); if (this.network) this.network.setData({ nodes: this.nodes, edges: this.edges }); },
+        getCurrentGraphData() { if (this.network) this.network.storePositions(); return { nodes: this.nodes.get({ fields: ['id', 'label', 'body', 'x', 'y', 'title'] }), edges: this.edges.get({ fields: ['from', 'to', 'id'] }) }; },
+        ensureInitialized(el, cb) { if (!el || (this.network && this.activeContainerElement === el)) return; this.destroyVisualization(); this.activeContainerElement = el; this.selectionCallback = cb; const d = { nodes: this.nodes, edges: this.edges }; const o = this.getOptions(this.isDarkMode()); this.network = new vis.Network(el, d, o); this.network.on('click', (p) => { const nId = p.nodes.length > 0 ? p.nodes[0] : null; if (this.selectionCallback) this.selectionCallback(nId ? this.nodes.get(nId) : null); }); this.network.on('dragEnd', () => this.syncCallback && this.syncCallback()); this.network.on('stabilizationIterationsDone', () => { if (this.network) this.network.storePositions(); this.syncCallback && this.syncCallback(); }); },
+        setSyncCallback(callback) { this.syncCallback = callback; },
+        destroyVisualization() { if (this.network) { this.network.destroy(); this.network = null; } this.activeContainerElement = null; this.selectionCallback = null; },
+        updateTheme() { if (this.network) this.network.setOptions(this.getOptions(this.isDarkMode())); },
+        zoomToFitAllNodes(duration = 750) { if (this.network && this.nodes.length > 0) this.network.fit({ animation: { duration, easingFunction: 'easeInOutQuad' } }); },
+        resetZoom(duration = 750) { if (this.network) this.network.moveTo({ scale: 1.0, animation: { duration, easingFunction: 'easeInOutQuad' } }); },
+        setSelectedNode(nodeId) { if (!this.network) return; if (nodeId) { this.network.selectNodes([nodeId]); this.network.focus(nodeId, { scale: 1.2, animation: { duration: 500 } }); } else { this.network.unselectAll(); this.network.fit({ animation: { duration: 500 } }); } },
+        addNode(id, body = "") { if (!id || typeof id !== 'string' || id.trim() === "") return { success: false, message: "Key (ID) is required." }; id = id.trim(); if (this.nodes.get(id)) return { success: false, message: `Entry "${id}" already exists.` }; this.nodes.add({ id: id, label: id, body: body || "", title: body || " " }); this.zoomToFitAllNodes(); return { success: true, message: `Entry "${id}" created.` }; },
+        editNode(currentId, newIdParam, newBodyParam) { currentId = currentId ? currentId.trim() : null; const newId = newIdParam ? newIdParam.trim() : null; if (!currentId) return { success: false, message: "Current key is required." }; const n = this.nodes.get(currentId); if (!n) return { success: false, message: `Entry "${currentId}" not found.` }; const idChanged = newId && newId !== currentId; if (idChanged && this.nodes.get(newId)) return { success: false, message: `Cannot rename to "${newId}": key exists.` }; let bodyChanged = typeof newBodyParam === 'string' && n.body !== newBodyParam; if (!idChanged && !bodyChanged) return { success: true, message: `Entry "${currentId}" was not changed.` }; if (idChanged) { const nn = { ...n, id: newId, label: newId, body: bodyChanged ? newBodyParam : n.body, title: bodyChanged ? newBodyParam : (n.body || " ") }; delete nn.x; delete nn.y; const cE = this.edges.get({ filter: e => e.from === currentId || e.to === currentId }); const nE = cE.map(e => ({ ...e, from: e.from === currentId ? newId : e.from, to: e.to === currentId ? newId : e.to })); this.nodes.remove(currentId); this.edges.remove(cE.map(e => e.id)); this.nodes.add(nn); this.edges.add(nE); } else { this.nodes.update({ id: currentId, body: newBodyParam, title: newBodyParam || " " }); } const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === currentId) { const fId = idChanged ? newId : currentId; this.setSelectedNode(fId); if (this.selectionCallback) this.selectionCallback(this.nodes.get(fId)); } let msg = `Entry "${currentId}" updated.`; if (idChanged) msg += ` Renamed to "${newId}".`; if (bodyChanged) msg += ` Value updated.`; return { success: true, message: msg }; },
+        addLink(srcId, tgtId) { if (!srcId || !tgtId) return { success: false, message: "Source and target keys required." }; srcId = srcId.trim(); tgtId = tgtId.trim(); if (srcId === tgtId) return { success: false, message: "Cannot link to self." }; if (!this.nodes.get(srcId)) return { success: false, message: `Source "${srcId}" not found.` }; if (!this.nodes.get(tgtId)) return { success: false, message: `Target "${tgtId}" not found.` }; if (this.edges.get({ filter: e => (e.from === srcId && e.to === tgtId) || (e.from === tgtId && e.to === srcId) }).length > 0) { return { success: false, message: "Link already exists." }; } this.edges.add({ from: srcId, to: tgtId }); return { success: true, message: `Linked "${srcId}" to "${tgtId}".` }; },
+        deleteNode(id) { id = id.trim(); if (!this.nodes.get(id)) return { success: false, message: `Entry "${id}" not found.` }; const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === id) this.selectionCallback(null); this.nodes.remove(id); return { success: true, message: `Entry "${id}" deleted.` }; },
+        highlightSearch(q) { const nq = q ? q.trim().toLowerCase() : ""; const dC = this.getOptions(this.isDarkMode()).nodes.color; const u = this.nodes.map(n => ({ id: n.id, color: (nq && (n.label.toLowerCase().includes(nq) || (n.body && n.body.toLowerCase().includes(nq)))) ? dC.highlight : { background: dC.background, border: dC.border } })); if (u.length > 0) this.nodes.update(u); return { success: true, message: nq ? `Highlighting: "${q}".` : "Highlighting cleared." }; },
+        clearGraphData() { this.nodes.clear(); this.edges.clear(); if (this.selectionCallback) this.selectionCallback(null); return { success: true, message: "Data store for this tab cleared." }; }
+    };
+    
+    createApp({
+      components: { 'message-item': MessageItem },
+      setup() {
+        // --- App State (Multi-Tab) ---
+        const tabs = ref([]);
+        const activeTabId = ref(null);
+        const newMessageText = ref(''), editingMessage = ref(null);
+        const isLoading = ref(false), chatContainerRef = ref(null);
+        const activeTempGraphSlotId = ref(null);
+        const LS_SESSIONS_KEY = 'm8_chat_sessions_v6';
+        const LS_GRAPH_DATA_KEY = 'm8_graph_data_v1';
+
+        const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value));
+        
+        // --- Settings State ---
+        const apiKey = ref("");
+        const modelName = ref("gemini-2.5-flash-lite");
+        const apiUrl = computed(() => `https://generativelanguage.googleapis.com/v1beta/models/${modelName.value}:generateContent?key=${apiKey.value}`);
+        const showSettingsModal = ref(false);
+        const settingsModel = ref('');
+        const settingsApiKey = ref('');
+        const LS_API_KEY_KEY = 'm8_gemini_api_key_v2';
+        const LS_MODEL_NAME_KEY = 'm8_gemini_model_name_v2';
+
+        const saveTabsToLocalStorage = () => { try { localStorage.setItem(LS_SESSIONS_KEY, JSON.stringify(tabs.value)); } catch (e) { console.error("Error saving sessions:", e); } };
+        const saveGraphToLocalStorage = () => { try { localStorage.setItem(LS_GRAPH_DATA_KEY, JSON.stringify(visGraphManager.getCurrentGraphData())); } catch (e) { console.error("Error saving graph data:", e); } };
+        watch(tabs, saveTabsToLocalStorage, { deep: true });
+        watch(activeTabId, (newId) => { if (newId) { scrollToBottom(true); } });
+        
+        // --- Settings & Tab Management ---
+        const openSettingsModal = () => { settingsModel.value = modelName.value; settingsApiKey.value = apiKey.value; showSettingsModal.value = true; };
+        const closeSettingsModal = () => { showSettingsModal.value = false; };
+        const saveSettings = () => { if (!settingsApiKey.value || settingsApiKey.value.trim() === '') { alert("API Key cannot be empty."); return; } localStorage.setItem(LS_API_KEY_KEY, settingsApiKey.value); localStorage.setItem(LS_MODEL_NAME_KEY, settingsModel.value); apiKey.value = settingsApiKey.value; modelName.value = settingsModel.value; closeSettingsModal(); addOrUpdateMessage('system', `Settings updated. Using model: <b>${settingsModel.value}</b>.`, null, false, false, `Settings updated.`, true); };
+        const createNewTab = (messages = []) => { const newTabId = Date.now().toString(); const newTab = { id: newTabId, name: `Chat ${tabs.value.length + 1}`, messages, activeToolName: '', activeToolState: '' }; tabs.value.push(newTab); return newTabId; };
+        const addNewTab = () => { const newTabId = createNewTab([{ id: Date.now().toString(36), role: 'model', parts: [{ text: '👋' }], originalMarkdown: '👋', isStreaming: false, isError: false, isSystemToolResponse: false, isGraphDisplaySlot: false, }]); selectTab(newTabId); };
+        const selectTab = (tabId) => { if (activeTabId.value !== tabId) { activeTabId.value = tabId; } };
+        const closeTab = (tabId) => { const index = tabs.value.findIndex(t => t.id === tabId); if (index === -1) return; let newActiveId = null; if (activeTabId.value === tabId) { if (tabs.value.length > 1) { newActiveId = index > 0 ? tabs.value[index - 1].id : tabs.value[1].id; } } tabs.value.splice(index, 1); if (tabs.value.length === 0) { addNewTab(); } else if (newActiveId) { selectTab(newActiveId); } };
+
+        // --- Core Logic & Tool Definitions ---
+        const SYSTEM_PROMPT = `You are M8, an advanced multi-step reasoning assistant with full access to external tools. You combine thoughtful, step-by-step analysis with precise tool use to retrieve, process, and present information.
+
+## How You Work
+1. **Plan**: Break down requests into subtasks. Determine logical order and identify needed tools.
+2. **Use Tools Thoughtfully**: Call tools for real-time or specialized data. Analyze results before proceeding.
+3. **Reason in Steps**: Use multi-step reasoning. Don't rush to the final answer.
+4. **Present Results**: Share clean, concise summaries. Show lists clearly, answer questions directly.
+
+## Interaction Style
+- Match the user's tone: warm, human, clear, and helpful.
+- Be conversational, but always grounded and factual.
+- Ask clarifying questions when needed.
+
+# Tools  
+Your tools are for data management and information retrieval.  
+      
+## Weather  
+- Use 'get_weather_forecast' with a city name for a general summary.  
+- To get a detailed hourly forecast for a specific day (e.g., today, tomorrow), provide the 'date' parameter in YYYY-MM-DD format. The current date is provided in the context below.  
+      
+## Wikipedia Workflow
+- When asked to research a topic, provide a summary from the most relevant Wikipedia article directly.
+- **Step 1:** Use 'search_wikipedia_articles' with the user's query.
+- **Step 2:** From the search results, pick the most relevant article. Then, immediately call 'get_wikipedia_article_details' for that article's title (with \`get_summary: true\`) to get its content.
+- **Step 3:** Present the final summary to the user.
+- **Do not show the user a list of search results to choose from.** You must choose the best article and get its details in the same turn. If you cannot confidently pick one, you may ask for clarification.
+      
+## Data Storage (Graph)  
+- You can store data as key-value pairs (nodes), link them, and search them.
+- This data store is SHARED across all your chat tabs. Changes in one tab are visible everywhere.
+- You can chain tool calls. For example, to store data from Wikipedia, first get the details, then call 'store_data'.`;
+        const geminiTools = [{ functionDeclarations: [ { name: "get_weather_forecast", description: "Fetches the weather forecast. Provides a general summary by default, or a detailed hourly forecast for a specific date if provided.", parameters: { type: "OBJECT", properties: { location: { type: "STRING", description: "The city or location to get the weather for." }, date: { type: "STRING", description: "Optional. A specific date for an hourly forecast, in YYYY-MM-DD format." } }, required: ["location"] } }, { name:"store_data", description:"Stores a new data entry.", parameters:{ type:"OBJECT", properties:{ key:{type:"STRING",description:"The unique key for the new entry."}, value:{type:"STRING",description:"Optional. The text/Markdown value."} }, required:["key"] } }, { name:"update_data", description:"Modifies an existing entry.", parameters: { type: "OBJECT", properties: { key: {type: "STRING", description: "Current key of the entry to edit."}, new_key: {type: "STRING", description: "Optional. The new key."}, new_value: {type: "STRING", description: "Optional. The new value."} }, required: ["key"] } }, { name:"link_data", description:"Creates a link between two entries.", parameters:{type:"OBJECT",properties:{source_key:{type:"STRING", description: "Source entry key."},target_key:{type:"STRING", description: "Target entry key."}},required:["source_key","target_key"]}}, { name:"delete_data", description:"Deletes an entry by key.", parameters:{type:"OBJECT",properties:{key:{type:"STRING", description: "The key to delete."}},required:["key"]}}, { name:"search_data", description:"Searches and highlights entries.", parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}}, { name:"clear_store", description:"Erases the entire data store for the current tab.", parameters:{type:"OBJECT",properties:{}}}, { name:"list_data", description:"Lists all data entries.", parameters:{type:"OBJECT",properties:{}}}, { name:"fetch_and_store_wiki_article", description:"Fetches a Wikipedia article's summary and stores it.", parameters: { type: "OBJECT", properties: { topic: { type: "STRING", description: "The topic of the article to fetch and store." } }, required: ["topic"] } }, { name: "search_wikipedia_articles", description: "Searches Wikipedia for a query and returns matching article titles and summaries.", parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The term to search for." } }, required: ["query"] } }, { name: "get_wikipedia_article_details", description: "Gets details for a *specific* Wikipedia article, like the summary or image.", parameters: { type: "OBJECT", properties: { topic: { type: "STRING", description: "The exact title of the article." }, get_summary: { type: "BOOLEAN", description: "True to fetch the summary." }, get_image: { type: "BOOLEAN", description: "True to fetch the main image URL." } }, required: ["topic"] } } ]}];
+        const isGraphTool = (name) => !["search_wikipedia_articles", "get_wikipedia_article_details", "get_weather_forecast"].includes(name);
+        const handleWeatherForecast = async (args) => { const { location, date } = args; if (!location) return { success: false, message: "A location must be provided." }; try { const r = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`); if (!r.ok) { if (r.status === 404) return { success: false, message: `Could not find weather for: "${location}".` }; throw new Error(`Network error. Status: ${r.status}`); } const w = await r.json(); const lN = `${w.nearest_area[0].areaName[0].value}, ${w.nearest_area[0].country[0].value}`; if (date) { if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { success: false, message: "Invalid date format. Use YYYY-MM-DD." }; const dD = w.weather.find(d => d.date === date); if (!dD) return { success: false, message: `Forecast for ${date} is not available.` }; const hF = dD.hourly.map(h => { const h24 = parseInt(h.time) / 100; const p = h24 >= 12 ? 'PM' : 'AM'; let h12 = h24 % 12; if (h12 === 0) h12 = 12; return { time: `${h12} ${p}`, temp_C: `${h.tempC}°C`, feels_like_C: `${h.FeelsLikeC}°C`, description: h.weatherDesc[0].value, chance_of_rain: `${h.chanceofrain}%` }; }); return { success: true, data: { location: lN, date: date, hourly_forecast: hF } }; } else { const c = w.current_condition[0]; const t = w.weather[0]; const tm = w.weather[1]; const s = { location: lN, current_conditions: { description: c.weatherDesc[0].value, temp_C: `${c.temp_C}°C`, feels_like_C: `${c.FeelsLikeC}°C`, humidity: `${c.humidity}%`, wind: `${c.windspeedKmph} km/h ${c.winddir16Point}` }, today_forecast: { date: t.date, max_temp_C: `${t.maxtempC}°C`, min_temp_C: `${t.mintempC}°C`, summary: t.hourly[4].weatherDesc[0].value, sunrise: t.astronomy[0].sunrise, sunset: t.astronomy[0].sunset }, tomorrow_forecast: { date: tm.date, max_temp_C: `${tm.maxtempC}°C`, min_temp_C: `${tm.mintempC}°C`, summary: tm.hourly[4].weatherDesc[0].value } }; return { success: true, data: s }; } } catch (e) { console.error("Weather fetch failed:", e); return { success: false, message: `Error fetching weather: ${e.message}` }; } };
+        const handleWikipediaSearch = async (args) => { const { query } = args; if (!query) return { success: false, message: "Query required." }; const ep = 'https://en.wikipedia.org/w/api.php'; const sP = new URLSearchParams({ action: 'query', list: 'search', srsearch: query, srlimit: '5', format: 'json', origin: '*' }); const sR = await fetch(`${ep}?${sP}`); if (!sR.ok) throw new Error('Wiki search failed'); const sD = await sR.json(); const sRes = sD.query.search; if (sRes.length === 0) return { success: true, data: { results: [] } }; const ts = sRes.map(r => r.title); const eP = new URLSearchParams({ action: 'query', prop: 'extracts', titles: ts.join('|'), exintro: true, explaintext: true, format: 'json', origin: '*' }); const eR = await fetch(`${ep}?${eP}`); if (!eR.ok) throw new Error('Wiki extract failed'); const eD = await eR.json(); const pgs = eD.query.pages; const cRes = sRes.map(sRe => { const pD = Object.values(pgs).find(p => p.pageid === sRe.pageid); return { title: sRe.title, pageid: sRe.pageid, summary: pD ? pD.extract : 'No summary.' }; }); return { success: true, data: { results: cRes }}; };
+        const handleWikipediaDetails = async (args) => { const { topic, get_summary, get_image } = args; if (!topic) return { success: false, message: "Topic required." }; const ep = 'https://en.wikipedia.org/w/api.php'; const p = new URLSearchParams({ action: 'query', titles: topic, format: 'json', redirects: '1', origin: '*' }); const pr = []; if (get_summary) { pr.push('extracts'); p.set('exintro', true); p.set('explaintext', true); } if (get_image) { pr.push('pageimages'); p.set('pithumbsize', 400); } if (pr.length === 0) return { success: false, message: "No action requested." }; p.set('prop', pr.join('|')); try { const r = await fetch(`${ep}?${p}`); if (!r.ok) throw new Error(`Wiki API err: ${r.statusText}`); const d = await r.json(); const pgs = d.query.pages; const pId = Object.keys(pgs)[0]; if (!pId || pId === "-1") return { success: true, data: { message: `Could not find "${topic}".` } }; const pg = pgs[pId]; const res = { title: pg.title, url: `https://en.wikipedia.org/?curid=${pg.pageid}` }; if (get_summary) res.summary = pg.extract; if (get_image && pg.thumbnail) res.imageUrl = pg.thumbnail.source; return { success: true, data: res }; } catch (err) { console.error("Wiki fetch failed:", err); return { success: false, message: `Failed to fetch from Wiki: ${err.message}` }; } };
+        const handleToolCall = async (functionName, args) => { let result; switch (functionName) { case "get_weather_forecast": result = await handleWeatherForecast(args); break; case "store_data": result = visGraphManager.addNode(args.key, args.value); break; case "update_data": result = visGraphManager.editNode(args.key, args.new_key, args.new_value); break; case "link_data": result = visGraphManager.addLink(args.source_key, args.target_key); break; case "delete_data": result = visGraphManager.deleteNode(args.key); break; case "search_data": result = visGraphManager.highlightSearch(args.query); break; case "clear_store": result = visGraphManager.clearGraphData(); break; case "list_data": const notes = visGraphManager.nodes.get().map(n => ({ id: n.id, body: n.body })); result = { success: true, message: `Found ${notes.length} entries.`, data: notes }; if (result.success) visGraphManager.zoomToFitAllNodes(); break; case "fetch_and_store_wiki_article": const wikiRes = await handleWikipediaDetails({ topic: args.topic, get_summary: true }); if (wikiRes.success && wikiRes.data.summary) { result = visGraphManager.addNode(wikiRes.data.title, wikiRes.data.summary); result.message = `Fetched & stored "${wikiRes.data.title}".`; } else { result = { success: false, message: `Could not fetch "${args.topic}".` }; } break; case "search_wikipedia_articles": result = await handleWikipediaSearch(args); break; case "get_wikipedia_article_details": result = await handleWikipediaDetails(args); break; default: result = { success: false, message: `Unknown function: ${functionName}` }; } if (result.success && isGraphTool(functionName)) { saveGraphToLocalStorage(); if (activeTempGraphSlotId.value) { const i = activeTab.value.messages.findIndex(m => m.id === activeTempGraphSlotId.value); if (i > -1) activeTab.value.messages.splice(i, 1); activeTempGraphSlotId.value = null; } const newId = 'graph-slot-' + Date.now(); addOrUpdateMessage('system', '', newId, false, false, '', false, true); activeTempGraphSlotId.value = newId; const dur = functionName === 'list_data' ? 9000 : 7000; setTimeout(() => { if (activeTempGraphSlotId.value === newId) { const i = activeTab.value.messages.findIndex(m => m.id === newId); if (i > -1) activeTab.value.messages.splice(i, 1); activeTempGraphSlotId.value = null; if (functionName === 'list_data') visGraphManager.resetZoom(); } }, dur); } return result; };
+        const autoGrowTextarea=(ev)=>{const el=ev.target;el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight,128)}px`;};
+        const scrollToBottom=(force=false)=>{nextTick(()=>{if(chatContainerRef.value){const{scrollTop,scrollHeight,clientHeight}=chatContainerRef.value;if(force||scrollHeight-scrollTop-clientHeight<150)chatContainerRef.value.scrollTop=scrollHeight;}});};
+        const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false)=>{ if (!activeTab.value) return; const messages = activeTab.value.messages; const exIdx=id?messages.findIndex(m=>m.id===id):-1; const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,timestamp:Date.now()}; if(exIdx>-1)messages.splice(exIdx,1,msgData);else messages.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot);return msgData.id; };
+        const handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('-input');if(editingMessage.value){const idx=activeTab.value.messages.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){activeTab.value.messages[idx].parts[0].text=txt;activeTab.value.messages[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{addOrUpdateMessage('user',txt,null,false,false,txt);const hist=activeTab.value.messages.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot).map(m=>{const parts=m.role==='tool'?m.parts:m.parts.map(p=>({text:p.text}));return{role:m.role,parts:parts};});await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
+        const fetchBotResponse=async(chatHist)=>{ if (!activeTab.value) { isLoading.value = false; return; } const botMsgId=addOrUpdateMessage('model','',null,true); isLoading.value=true; const currentDate = new Date().toISOString().slice(0, 10); const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n# Current Context\n- The current date is: ${currentDate}.`; const payload = { contents: chatHist, tools: geminiTools, systemInstruction: { parts: [{ text: dynamicSystemPrompt }] } }; try{const resp=await fetch(apiUrl.value,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const msgIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId); if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;activeTab.value.messages[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeToolName='';activeTab.value.activeToolState='';} isLoading.value=false; return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){activeTab.value.messages[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeToolName='';activeTab.value.activeToolState='';} isLoading.value=false; return;}const parts=data.candidates[0].content.parts;let textResp="",funcCalls=[];for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall)funcCalls.push(p.functionCall);}if(funcCalls.length>0){ if (activeTab.value) { activeTab.value.activeToolName = funcCalls.map(c => c.name).join(', '); activeTab.value.activeToolState = 'running'; } const toolResponses=[]; for(const funcCall of funcCalls){const funcRes=await handleToolCall(funcCall.name,funcCall.args);addOrUpdateMessage('system',`<b>[${funcCall.name}]:</b> ${funcRes.message?.replace(/\n/g,'<br>') || 'Completed.'}`,null,false,!funcRes.success,`[Res: ${funcRes.message || 'Completed.'}]`,true);let modelContent=funcRes;if(funcRes.success&&funcRes.data)modelContent=funcRes.data;toolResponses.push({functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:modelContent}}});} const originalMessageIndex = activeTab.value.messages.findIndex(m => m.id === botMsgId); if (originalMessageIndex > -1) activeTab.value.messages.splice(originalMessageIndex, 1); const newHist=[...chatHist,{role:'model',parts:funcCalls.map(fc=>({functionCall:fc}))},{role:'tool',parts:toolResponses}]; await fetchBotResponse(newHist); }else if(textResp.trim()!==""){activeTab.value.messages[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];activeTab.value.messages[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);activeTab.value.messages[msgIdx].parts[0].text=textResp;activeTab.value.messages[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false; if (activeTab.value && activeTab.value.activeToolState === 'running') { activeTab.value.activeToolState = 'success'; setTimeout(() => { if (activeTab.value) { activeTab.value.activeToolName = ''; activeTab.value.activeToolState = ''; } }, 2000); } }},15);}else{ if (activeTab.value && activeTab.value.activeToolState === 'running') { activeTab.value.activeToolState = 'success'; setTimeout(() => { if (activeTab.value) { activeTab.value.activeToolName = ''; activeTab.value.activeToolState = ''; } }, 2000); } if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";activeTab.value.messages[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;activeTab.value.messages[msgIdx].isError=true;}else{activeTab.value.messages[msgIdx].parts[0].text=``;} activeTab.value.messages[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(mIdx>-1){activeTab.value.messages[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;activeTab.value.messages[mIdx].isError=true;activeTab.value.messages[mIdx].isStreaming=false;} if (activeTab.value) { activeTab.value.activeToolName = ''; activeTab.value.activeToolState = ''; } isLoading.value=false;}finally{const fIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&activeTab.value.messages[fIdx].isStreaming){activeTab.value.messages[fIdx].isStreaming=false;}if(!activeTab.value.messages.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
+        const startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
+        const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
+        
+        onMounted(() => {
+            const savedKey = localStorage.getItem(LS_API_KEY_KEY);
+            const savedModel = localStorage.getItem(LS_MODEL_NAME_KEY);
+            if (savedKey) apiKey.value = savedKey;
+            if (savedModel) modelName.value = savedModel;
+            const isApiKeyMissing = !apiKey.value;
+
+            // Setup shared graph data
+            visGraphManager.setSyncCallback(saveGraphToLocalStorage);
+            const savedGraphData = localStorage.getItem(LS_GRAPH_DATA_KEY);
+            if (savedGraphData) {
+                try {
+                    visGraphManager.loadTabData(JSON.parse(savedGraphData));
+                } catch(e) { console.error("Could not load shared graph data:", e); }
+            }
+
+            // Setup tabs
+            const savedSessions = localStorage.getItem(LS_SESSIONS_KEY);
+            if (savedSessions) {
+                try {
+                    const parsedTabs = JSON.parse(savedSessions);
+                    if (Array.isArray(parsedTabs) && parsedTabs.length > 0) {
+                        tabs.value = parsedTabs.map(t => ({...t, activeToolName: '', activeToolState: ''})); // Ensure old tabs have new properties
+                        activeTabId.value = parsedTabs[0].id;
+                    } else { addNewTab(); }
+                } catch(e) { addNewTab(); }
+            } else { addNewTab(); }
+            
+            if (isApiKeyMissing) {
+                openSettingsModal();
+                const welcomeMessage = "Welcome! Please provide your Gemini API key in the Settings panel (click 'M8' in the header). You can get a free key from Google AI Studio.";
+                if(activeTab.value && activeTab.value.messages.length === 1 && activeTab.value.messages[0].originalMarkdown === '👋') {
+                    activeTab.value.messages[0].parts[0].text = welcomeMessage;
+                    activeTab.value.messages[0].originalMarkdown = welcomeMessage;
+                }
+            }
+            const darkModeObserver = new MutationObserver((mutations) => { for (const mutation of mutations) if (mutation.attributeName === 'class') visGraphManager.updateTheme(); });
+            darkModeObserver.observe(document.documentElement, { attributes: true });
+            onUnmounted(() => { darkModeObserver.disconnect(); visGraphManager.destroyVisualization(); });
+        });
+
+        return { tabs, activeTabId, activeTab, addNewTab, selectTab, closeTab, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, chatContainerRef, editingMessage, autoGrowTextarea, showSettingsModal, settingsModel, settingsApiKey, openSettingsModal, closeSettingsModal, saveSettings };
+      }
+    }).mount('#app');
+  </script>
 
 </body>
 </html>
