@@ -14,6 +14,7 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <link
     rel="stylesheet"
@@ -48,12 +49,13 @@
     #tab-container::-webkit-scrollbar-track { background: transparent; }
     #tab-container::-webkit-scrollbar-thumb { background-color: rgba(0,0,0,0.1); border-radius: 10px; }
     .dark #tab-container::-webkit-scrollbar-thumb { background-color: rgba(255,255,255,0.2); }
-    .graph-host-container {
+    .graph-host-container, .chart-host-container {
         position: relative; height: 350px; width: 100%; border-radius: 0.5rem;
         border: 1px solid #e2e8f0; margin-top: 1rem; margin-bottom: 1rem;
         transition: opacity 0.5s ease-in-out, max-height 0.5s ease-in-out; overflow: hidden;
     }
-    .dark .graph-host-container { border-color: #334155; }
+    .chart-host-container { padding: 1rem; }
+    .dark .graph-host-container, .dark .chart-host-container { border-color: #334155; }
     .node-details-card {
         position: absolute; top: 10px; right: 10px; width: 280px; max-height: calc(100% - 20px);
         background-color: #fff; border: 1px solid #e2e8f0; border-radius: 0.375rem;
@@ -227,46 +229,54 @@
         props: ['message'], emits: ['edit', 'copy'],
         setup(props, { emit }) {
             const contentRef = ref(null), parsedContent = ref(''), isUser = props.message.role === 'user';
-            const graphHostElement = ref(null), isDarkMode = ref(visGraphManager.isDarkMode());
+            const graphHostElement = ref(null);
+            const chartCanvasRef = ref(null);
+            const chartInstance = ref(null);
+            const isDarkMode = ref(visGraphManager.isDarkMode());
             const selectedRawNode = ref(null);
             const handleNodeSelectionChange = (nodeData) => { selectedRawNode.value = nodeData; };
             const displayedNodeDetails = computed(() => { if (selectedRawNode.value && selectedRawNode.value.body && selectedRawNode.value.body.trim() !== '') { return { id: selectedRawNode.value.label, parsedBody: marked.parse(selectedRawNode.value.body) }; } return null; });
             const closeNodeCard = () => { visGraphManager.setSelectedNode(null); };
+            const renderChart = () => { if (chartInstance.value) { chartInstance.value.destroy(); chartInstance.value = null; } if (!chartCanvasRef.value || !props.message.chartConfig) return; const { type, data, options } = props.message.chartConfig; const themeIsDark = document.documentElement.classList.contains('dark'); const tickColor = themeIsDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)'; const fontColor = themeIsDark ? '#cbd5e1' : '#475569'; const defaultOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: fontColor } }, title: { display: !!(options && options.title), text: options ? options.title : '', color: fontColor, font: { size: 16 } } }, scales: { y: { ticks: { color: fontColor }, grid: { color: tickColor } }, x: { ticks: { color: fontColor }, grid: { color: tickColor } } } }; if (type === 'pie' || type === 'doughnut' || type === 'polarArea' || type === 'radar') { delete defaultOptions.scales; if (type === 'radar') { defaultOptions.scales = { r: { angleLines: { color: tickColor }, grid: { color: tickColor }, pointLabels: { color: fontColor, font: { size: 12 } }, ticks: { color: fontColor, backdropColor: 'transparent' } } }; } } const config = { type: type, data: data, options: defaultOptions }; chartInstance.value = new Chart(chartCanvasRef.value, config); };
             const updateContentAndRenderMath = (text) => {
-              if (props.message.isGraphDisplaySlot) { parsedContent.value = ''; return; }
+              if (props.message.isGraphDisplaySlot || props.message.isChartDisplaySlot) { parsedContent.value = ''; return; }
               let html;
-              if (props.message.isRawHtml) {
-                  html = text;
-              } else if (props.message.isError) {
-                  html = text;
-              } else if (props.message.role === 'model' || props.message.isSystemToolResponse || props.message.isCodeDisplay) {
-                  html = marked.parse(text || (props.message.isStreaming ? ' ' : ''));
-              } else {
-                  html = marked.parse(text || '');
-              }
+              if (props.message.isRawHtml) { html = text; } 
+              else if (props.message.isError) { html = text; } 
+              else if (props.message.role === 'model' || props.message.isSystemToolResponse || props.message.isCodeDisplay) { html = marked.parse(text || (props.message.isStreaming ? ' ' : '')); } 
+              else { html = marked.parse(text || ''); }
 
-              if (props.message.isCodeDisplay) {
-                  html = `<div class="p-2.5 my-2 text-slate-800 dark:text-slate-200 bg-slate-200/50 dark:bg-slate-700/50 rounded-lg border border-slate-300 dark:border-slate-600/50">${html}</div>`;
-              } else if (props.message.isSystemToolResponse) {
-                  html = `<div class="p-2.5 text-xs italic bg-slate-200 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600/50">${html}</div>`;
-              } else if (props.message.isError) {
-                  html = `<div class="p-2.5 border border-red-400/50 rounded-lg bg-red-100/70 text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:border-red-500/50">${html}</div>`;
-              } else if (isUser) {
-                  html = `<div class="text-slate-700 dark:text-slate-200 text-right">${html}</div>`;
-              } else {
-                  html = `<div class="text-slate-800 dark:text-slate-200 text-left">${html}</div>`;
-              }
+              if (props.message.isCodeDisplay) { html = `<div class="p-2.5 my-2 text-slate-800 dark:text-slate-200 bg-slate-200/50 dark:bg-slate-700/50 rounded-lg border border-slate-300 dark:border-slate-600/50">${html}</div>`; }
+              else if (props.message.isSystemToolResponse) { html = `<div class="p-2.5 text-xs italic bg-slate-200 dark:bg-slate-700/60 rounded-lg text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-600/50">${html}</div>`; }
+              else if (props.message.isError) { html = `<div class="p-2.5 border border-red-400/50 rounded-lg bg-red-100/70 text-red-700 dark:bg-red-900/30 dark:text-red-300 dark:border-red-500/50">${html}</div>`; }
+              else if (isUser) { html = `<div class="text-slate-700 dark:text-slate-200 text-right">${html}</div>`; }
+              else { html = `<div class="text-slate-800 dark:text-slate-200 text-left">${html}</div>`; }
 
               parsedContent.value = html;
               nextTick(() => { if (contentRef.value && !props.message.isError && !props.message.isRawHtml && (props.message.role === 'model' || (text && text.includes('$')))) { try { if (typeof renderMathInElement === 'function') renderMathInElement(contentRef.value, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { console.warn("KaTeX:", e); } } });
             };
-            watch(() => props.message.parts[0].text, (nt) => { if (!props.message.isGraphDisplaySlot) updateContentAndRenderMath(nt); }, { immediate: true });
-            watch(() => props.message.isStreaming, (is, was) => { if (was && !is && !props.message.isGraphDisplaySlot) updateContentAndRenderMath(props.message.parts[0].text); });
+            watch(() => props.message.parts[0].text, (nt) => { if (!props.message.isGraphDisplaySlot && !props.message.isChartDisplaySlot) updateContentAndRenderMath(nt); }, { immediate: true });
+            watch(() => props.message.isStreaming, (is, was) => { if (was && !is && !props.message.isGraphDisplaySlot && !props.message.isChartDisplaySlot) updateContentAndRenderMath(props.message.parts[0].text); });
             watch(selectedRawNode, (newNodeData) => { if (newNodeData && newNodeData.body && graphHostElement.value) { nextTick(() => { const cardBody = graphHostElement.value.querySelector('.node-details-card-body'); if (cardBody && typeof renderMathInElement === 'function' && newNodeData.body.includes('$')) { try { renderMathInElement(cardBody, { delimiters: [{ left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false }], throwOnError: false }); } catch (e) { console.warn("KaTeX in card:", e); } } }); } }, { deep: true });
             const handleEdit = () => emit('edit', props.message), handleCopy = () => emit('copy', props.message);
-            onMounted(() => { if (props.message.isGraphDisplaySlot && graphHostElement.value) { isDarkMode.value = visGraphManager.isDarkMode(); visGraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange); } });
-            onUnmounted(() => { if (props.message.isGraphDisplaySlot && visGraphManager.activeContainerElement === graphHostElement.value) { visGraphManager.destroyVisualization(); selectedRawNode.value = null; } });
-            return { isUser, handleEdit, handleCopy, contentRef, parsedContent, message: props.message, graphHostElement, isDarkMode, displayedNodeDetails, closeNodeCard };
+            onMounted(() => {
+                isDarkMode.value = visGraphManager.isDarkMode();
+                let themeObserver = null;
+                if (props.message.isGraphDisplaySlot && graphHostElement.value) { visGraphManager.ensureInitialized(graphHostElement.value, handleNodeSelectionChange); }
+                if (props.message.isChartDisplaySlot) {
+                    renderChart();
+                    themeObserver = new MutationObserver((mutations) => {
+                        for (const mutation of mutations) { if (mutation.attributeName === 'class') { isDarkMode.value = visGraphManager.isDarkMode(); renderChart(); } }
+                    });
+                    themeObserver.observe(document.documentElement, { attributes: true });
+                }
+                onUnmounted(() => { if (themeObserver) themeObserver.disconnect(); });
+            });
+            onUnmounted(() => {
+                if (props.message.isGraphDisplaySlot && visGraphManager.activeContainerElement === graphHostElement.value) { visGraphManager.destroyVisualization(); selectedRawNode.value = null; }
+                if (chartInstance.value) chartInstance.value.destroy();
+            });
+            return { isUser, handleEdit, handleCopy, contentRef, parsedContent, message: props.message, graphHostElement, isDarkMode, displayedNodeDetails, closeNodeCard, chartCanvasRef };
         },
         template: `
         <div v-if="message.isGraphDisplaySlot" class="w-full my-3">
@@ -278,12 +288,17 @@
                 </div>
             </div>
         </div>
+        <div v-else-if="message.isChartDisplaySlot" class="w-full my-3">
+            <div class="chart-host-container bg-white/50 dark:bg-slate-800/50">
+                <canvas ref="chartCanvasRef"></canvas>
+            </div>
+        </div>
         <div v-else :class="['w-full flex group relative', isUser ? 'justify-end' : 'justify-start']" :data-message-id="message.id">
-          <div :class="['max-w-[85%] sm:max-w-[80%]']">
+          <div :class="['max-w-[85%] sm:max-w-[80%']">
               <div ref="contentRef" class="rendered-content prose prose-sm max-w-none prose-p:my-0.5 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-headings:my-1 prose-pre:my-1.5" v-html="parsedContent"></div>
               <span v-if="message.isStreaming && !message.isError && !message.isSystemToolResponse" :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
           </div>
-          <div v-if="!message.isError && !message.isSystemToolResponse && !message.isGraphDisplaySlot && !message.isCodeDisplay && (isUser || (!message.isStreaming && message.role === 'model'))" :class="['absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150', isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2']">
+          <div v-if="!message.isError && !message.isSystemToolResponse && !message.isGraphDisplaySlot && !message.isChartDisplaySlot && !message.isCodeDisplay && (isUser || (!message.isStreaming && message.role === 'model'))" :class="['absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150', isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2']">
               <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></button>
               <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg></button>
           </div>
@@ -380,17 +395,29 @@ Your tools are for data management, information retrieval, and code execution.
 - Use 'get_weather_forecast' with a city name for a general summary.
 - To get a detailed hourly forecast for a specific day (e.g., today, tomorrow), provide the 'date' parameter in YYYY-MM-DD format. The current date is provided in the context below.
 
-## Wikipedia Workflow
-- When asked to research a topic, provide a summary from the most relevant Wikipedia article directly.
-- **Step 1:** Use 'search_wikipedia_articles' with the user's query.
-- **Step 2:** From the search results, pick the most relevant article. Then, immediately call 'get_wikipedia_article_details' for that article's title (with \`get_summary: true\`) to get its content.
-- **Step 3:** Present the final summary to the user.
-- **Do not show the user a list of search results to choose from.** You must choose the best article and get its details in the same turn. If you cannot confidently pick one, you may ask for clarification.
+## Web Search & Page Reading
+- To research a topic on the web, use a two-step process:
+- **Step 1:** Use 'web_search' with a query.
+- **Step 2:** Review the search results (titles, snippets, and URLs).
+- **Step 3:** If a result seems promising, use 'fetch_page_content' with its URL to read the full text.
+- **Step 4:** You can then summarize or analyze this text for the user.
 
 ## Data Storage (Graph)
 - You can store data as key-value pairs (nodes), link them, and search them.
 - This data store is SHARED across all your chat tabs. Changes in one tab are visible everywhere.
-- You can chain tool calls. For example, to store data from Wikipedia, first get the details, then call 'store_data'.
+- You can chain tool calls. For example, to store data from a web page, first read the page, then call 'store_data'.
+
+## Chart Display
+- To visualize data, use the \`display_chart\` tool.
+- You must specify a \`type\` (e.g., 'bar', 'line', 'pie', 'doughnut', 'radar') and the \`data\` object.
+- The \`data\` object needs \`labels\` (an array of strings) and \`datasets\` (an array of objects).
+- Each dataset needs a \`label\` (string) and \`data\` (an array of numbers).
+- You can optionally provide a \`title\` for the chart in the \`options\` object.
+- **Example:** To show a bar chart of fruit inventory.
+  - Call \`display_chart\` with:
+    - \`type\`: 'bar'
+    - \`data\`: { "labels": ["Apples", "Oranges", "Bananas"], "datasets": [{ "label": "Stock", "data": [50, 35, 60], "backgroundColor": ["#4ade80", "#fb923c", "#facc15"] }] }
+    - \`options\`: { "title": "Fruit Inventory" }
 
 ## File System
 - You can manage a simple, in-memory file system. Files are stored as text and are SHARED across all chats.
@@ -410,15 +437,78 @@ Your tools are for data management, information retrieval, and code execution.
   - Call \`execute_javascript\` with the code:
     \`const csvText = M8.files.read('data.csv'); if (!csvText) { return "File not found."; } const lines = csvText.split('\\n'); const processed = lines.map(l => l.toUpperCase()); M8.files.write('output.txt', processed.join('\\n')); return "Processed 'data.csv' and saved to 'output.txt'.";\`
 `;
-        const geminiTools = [{ functionDeclarations: [ { name: "get_weather_forecast", description: "Fetches the weather forecast. Provides a general summary by default, or a detailed hourly forecast for a specific date if provided.", parameters: { type: "OBJECT", properties: { location: { type: "STRING", description: "The city or location to get the weather for." }, date: { type: "STRING", description: "Optional. A specific date for an hourly forecast, in YYYY-MM-DD format." } }, required: ["location"] } }, { name:"store_data", description:"Stores a new data entry in the graph store.", parameters:{ type:"OBJECT", properties:{ key:{type:"STRING",description:"The unique key for the new entry."}, value:{type:"STRING",description:"Optional. The text/Markdown value."} }, required:["key"] } }, { name:"update_data", description:"Modifies an existing entry in the graph store.", parameters: { type: "OBJECT", properties: { key: {type: "STRING", description: "Current key of the entry to edit."}, new_key: {type: "STRING", description: "Optional. The new key."}, new_value: {type: "STRING", description: "Optional. The new value."} }, required: ["key"] } }, { name:"link_data", description:"Creates a link between two entries in the graph store.", parameters:{type:"OBJECT",properties:{source_key:{type:"STRING", description: "Source entry key."},target_key:{type:"STRING", description: "Target entry key."}},required:["source_key","target_key"]}}, { name:"delete_data", description:"Deletes an entry by key from the graph store.", parameters:{type:"OBJECT",properties:{key:{type:"STRING", description: "The key to delete."}},required:["key"]}}, { name:"search_data", description:"Searches and highlights entries in the graph store.", parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}}, { name:"clear_store", description:"Erases the entire graph data store.", parameters:{type:"OBJECT",properties:{}}}, { name:"list_data", description:"Lists all data entries from the graph store.", parameters:{type:"OBJECT",properties:{}}}, { name: "search_wikipedia_articles", description: "Searches Wikipedia for a query and returns matching article titles and summaries.", parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The term to search for." } }, required: ["query"] } }, { name: "get_wikipedia_article_details", description: "Gets details for a *specific* Wikipedia article, like the summary or image.", parameters: { type: "OBJECT", properties: { topic: { type: "STRING", description: "The exact title of the article." }, get_summary: { type: "BOOLEAN", description: "True to fetch the summary." }, get_image: { type: "BOOLEAN", "description": "True to fetch the main image URL." } }, required: ["topic"] } }, { name: "execute_javascript", description: "Executes JavaScript code in a secure sandbox with file system access. Use the `M8.files` object to read/write files.", parameters: { type: "OBJECT", properties: { code: { type: "STRING", description: "The JavaScript code to execute. Must use `return` for output. Access files via `M8.files.read/write`." }, timeout: { type: "NUMBER", description: "Optional. The maximum execution time in milliseconds. Defaults to 5000." } }, required: ["code"] } }, { name: "list_files", description: "Lists the names of all currently stored files.", parameters: { type: "OBJECT", properties: {} } }, { name: "read_file", description: "Reads the content of a specified file.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to read." } }, required: ["filename"] } }, { name: "delete_file", description: "Deletes a specified file from storage.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to delete." } }, required: ["filename"] } }, { name: "create_download_link", description: "Presents a file to the user for download. If 'content' is provided, it creates the file on the fly. Otherwise, it uses an existing file specified by 'filename' from the internal file store.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file for the user to download." }, content: { type: "STRING", description: "Optional. The text content of the file. If omitted, the tool will try to find a file with the given 'filename' in the file store." } }, required: ["filename"] } } ]}];
+        const geminiTools = [{ functionDeclarations: [ { name: "get_weather_forecast", description: "Fetches the weather forecast. Provides a general summary by default, or a detailed hourly forecast for a specific date if provided.", parameters: { type: "OBJECT", properties: { location: { type: "STRING", description: "The city or location to get the weather for." }, date: { type: "STRING", description: "Optional. A specific date for an hourly forecast, in YYYY-MM-DD format." } }, required: ["location"] } }, { name:"store_data", description:"Stores a new data entry in the graph store.", parameters:{ type:"OBJECT", properties:{ key:{type:"STRING",description:"The unique key for the new entry."}, value:{type:"STRING",description:"Optional. The text/Markdown value."} }, required:["key"] } }, { name:"update_data", description:"Modifies an existing entry in the graph store.", parameters: { type: "OBJECT", properties: { key: {type: "STRING", description: "Current key of the entry to edit."}, new_key: {type: "STRING", description: "Optional. The new key."}, new_value: {type: "STRING", description: "Optional. The new value."} }, required: ["key"] } }, { name:"link_data", description:"Creates a link between two entries in the graph store.", parameters:{type:"OBJECT",properties:{source_key:{type:"STRING", description: "Source entry key."},target_key:{type:"STRING", description: "Target entry key."}},required:["source_key","target_key"]}}, { name:"delete_data", description:"Deletes an entry by key from the graph store.", parameters:{type:"OBJECT",properties:{key:{type:"STRING", description: "The key to delete."}},required:["key"]}}, { name:"search_data", description:"Searches and highlights entries in the graph store.", parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}}, { name:"clear_store", description:"Erases the entire graph data store.", parameters:{type:"OBJECT",properties:{}}}, { name:"list_data", description:"Lists all data entries from the graph store.", parameters:{type:"OBJECT",properties:{}}}, { name: "web_search", description: "Performs a web search using DuckDuckGo and returns the top 10 results.", parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The search query." } }, required: ["query"] } }, { name: "fetch_page_content", description: "Fetches the clean, visible text content from a given URL. Useful for reading articles or web pages found via web_search.", parameters: { type: "OBJECT", properties: { url: { type: "STRING", description: "The full URL of the web page to read." } }, required: ["url"] } }, { name: "display_chart", description: "Renders data as a chart. Supports types like 'bar', 'line', 'pie', 'doughnut', 'radar', and 'polarArea'.", parameters: { type: "OBJECT", properties: { type: { type: "STRING", description: "The type of chart to display. Common options: 'bar', 'line', 'pie', 'doughnut', 'radar'." }, data: { type: "OBJECT", description: "The data for the chart, following Chart.js structure.", properties: { labels: { type: "ARRAY", description: "An array of strings for the x-axis or segment labels.", items: { type: "STRING" } }, datasets: { type: "ARRAY", description: "An array of dataset objects to plot.", items: { type: "OBJECT", properties: { label: { type: "STRING", description: "The label for this dataset (appears in legend and tooltips)." }, data: { type: "ARRAY", description: "The numerical data points for this dataset.", items: { type: "NUMBER" } }, backgroundColor: { type: "ARRAY", description: "Optional. Background color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } }, borderColor: { type: "ARRAY", description: "Optional. Border color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } } }, required: ["label", "data"] } } }, required: ["labels", "datasets"] }, options: { type: "OBJECT", description: "Optional. Configuration options for the chart.", properties: { title: { type: "STRING", description: "The main title to display above the chart." } } } }, required: ["type", "data"] } }, { name: "execute_javascript", description: "Executes JavaScript code in a secure sandbox with file system access. Use the `M8.files` object to read/write files.", parameters: { type: "OBJECT", properties: { code: { type: "STRING", description: "The JavaScript code to execute. Must use `return` for output. Access files via `M8.files.read/write`." }, timeout: { type: "NUMBER", description: "Optional. The maximum execution time in milliseconds. Defaults to 5000." } }, required: ["code"] } }, { name: "list_files", description: "Lists the names of all currently stored files.", parameters: { type: "OBJECT", properties: {} } }, { name: "read_file", description: "Reads the content of a specified file.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to read." } }, required: ["filename"] } }, { name: "delete_file", description: "Deletes a specified file from storage.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to delete." } }, required: ["filename"] } }, { name: "create_download_link", description: "Presents a file to the user for download. If 'content' is provided, it creates the file on the fly. Otherwise, it uses an existing file specified by 'filename' from the internal file store.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file for the user to download." }, content: { type: "STRING", description: "Optional. The text content of the file. If omitted, the tool will try to find a file with the given 'filename' in the file store." } }, required: ["filename"] } } ]}];
         const isGraphTool = (name) => ["store_data", "update_data", "link_data", "delete_data", "search_data", "clear_store", "list_data"].includes(name);
+        
+        const proxy = 'https://api.allorigins.win/raw?url=';
+
+        async function doSearch(q) {
+          const ddgHTML = 'https://html.duckduckgo.com/html/?q=';
+          const fetchUrl = proxy + encodeURIComponent(ddgHTML + encodeURIComponent(q));
+          const res = await fetch(fetchUrl);
+          if (!res.ok) throw new Error('Fetch failed: ' + res.status);
+          const text = await res.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(text, 'text/html');
+
+          const links = [...doc.querySelectorAll('a.result__a')].slice(0, 10);
+          const snippets = [...doc.querySelectorAll('a.result__snippet')].slice(0, 10);
+
+          return links.map((a, i) => ({
+            title: a.textContent.trim(),
+            href: a.href,
+            snippet: snippets[i]?.textContent.trim() || '',
+          }));
+        }
+
+        async function fetchPageText(url) {
+          try {
+            const res = await fetch(proxy + encodeURIComponent(url));
+            if (!res.ok) throw new Error('Failed to load page: ' + res.status);
+            const htmlText = await res.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            [...doc.querySelectorAll('script, style, noscript, iframe, meta, link, [hidden]')].forEach(el => el.remove());
+            const text = doc.body.innerText.trim();
+            return text || 'No visible text content found.';
+          } catch (err) {
+            return 'Error fetching page content: ' + err.message;
+          }
+        }
+
         const handleWeatherForecast = async (args) => { const { location, date } = args; if (!location) return { success: false, message: "A location must be provided." }; try { const r = await fetch(`https://wttr.in/${encodeURIComponent(location)}?format=j1`); if (!r.ok) { if (r.status === 404) return { success: false, message: `Could not find weather for: "${location}".` }; throw new Error(`Network error. Status: ${r.status}`); } const w = await r.json(); const lN = `${w.nearest_area[0].areaName[0].value}, ${w.nearest_area[0].country[0].value}`; if (date) { if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { success: false, message: "Invalid date format. Use YYYY-MM-DD." }; const dD = w.weather.find(d => d.date === date); if (!dD) return { success: false, message: `Forecast for ${date} is not available.` }; const hF = dD.hourly.map(h => { const h24 = parseInt(h.time) / 100; const p = h24 >= 12 ? 'PM' : 'AM'; let h12 = h24 % 12; if (h12 === 0) h12 = 12; return { time: `${h12} ${p}`, temp_C: `${h.tempC}°C`, feels_like_C: `${h.FeelsLikeC}°C`, description: h.weatherDesc[0].value, chance_of_rain: `${h.chanceofrain}%` }; }); return { success: true, data: { location: lN, date: date, hourly_forecast: hF } }; } else { const c = w.current_condition[0]; const t = w.weather[0]; const tm = w.weather[1]; const s = { location: lN, current_conditions: { description: c.weatherDesc[0].value, temp_C: `${c.temp_C}°C`, feels_like_C: `${c.FeelsLikeC}°C`, humidity: `${c.humidity}%`, wind: `${c.windspeedKmph} km/h ${c.winddir16Point}` }, today_forecast: { date: t.date, max_temp_C: `${t.maxtempC}°C`, min_temp_C: `${t.mintempC}°C`, summary: t.hourly[4].weatherDesc[0].value, sunrise: t.astronomy[0].sunrise, sunset: t.astronomy[0].sunset }, tomorrow_forecast: { date: tm.date, max_temp_C: `${tm.maxtempC}°C`, min_temp_C: `${tm.mintempC}°C`, summary: tm.hourly[4].weatherDesc[0].value } }; return { success: true, data: s }; } } catch (e) { console.error("Weather fetch failed:", e); return { success: false, message: `Error fetching weather: ${e.message}` }; } };
-        const handleWikipediaSearch = async (args) => { const { query } = args; if (!query) return { success: false, message: "Query required." }; const ep = 'https://en.wikipedia.org/w/api.php'; const sP = new URLSearchParams({ action: 'query', list: 'search', srsearch: query, srlimit: '5', format: 'json', origin: '*' }); const sR = await fetch(`${ep}?${sP}`); if (!sR.ok) throw new Error('Wiki search failed'); const sD = await sR.json(); const sRes = sD.query.search; if (sRes.length === 0) return { success: true, data: { results: [] } }; const ts = sRes.map(r => r.title); const eP = new URLSearchParams({ action: 'query', prop: 'extracts', titles: ts.join('|'), exintro: true, explaintext: true, format: 'json', origin: '*' }); const eR = await fetch(`${ep}?${eP}`); if (!eR.ok) throw new Error('Wiki extract failed'); const eD = await eR.json(); const pgs = eD.query.pages; const cRes = sRes.map(sRe => { const pD = Object.values(pgs).find(p => p.pageid === sRe.pageid); return { title: sRe.title, pageid: sRe.pageid, summary: pD ? pD.extract : 'No summary.' }; }); return { success: true, data: { results: cRes }}; };
-        const handleWikipediaDetails = async (args) => { const { topic, get_summary, get_image } = args; if (!topic) return { success: false, message: "Topic required." }; const ep = 'https://en.wikipedia.org/w/api.php'; const p = new URLSearchParams({ action: 'query', titles: topic, format: 'json', redirects: '1', origin: '*' }); const pr = []; if (get_summary) { pr.push('extracts'); p.set('exintro', true); p.set('explaintext', true); } if (get_image) { pr.push('pageimages'); p.set('pithumbsize', 400); } if (pr.length === 0) return { success: false, message: "No action requested." }; p.set('prop', pr.join('|')); try { const r = await fetch(`${ep}?${p}`); if (!r.ok) throw new Error(`Wiki API err: ${r.statusText}`); const d = await r.json(); const pgs = d.query.pages; const pId = Object.keys(pgs)[0]; if (!pId || pId === "-1") return { success: true, data: { message: `Could not find "${topic}".` } }; const pg = pgs[pId]; const res = { title: pg.title, url: `https://en.wikipedia.org/?curid=${pg.pageid}` }; if (get_summary) res.summary = pg.extract; if (get_image && pg.thumbnail) res.imageUrl = pg.thumbnail.source; return { success: true, data: res }; } catch (err) { console.error("Wiki fetch failed:", err); return { success: false, message: `Failed to fetch from Wiki: ${err.message}` }; } };
         
         const handleToolCall = async (functionName, args) => {
             let result;
             switch (functionName) {
+                case "display_chart":
+                    const { type, data, options } = args;
+                    if (!type || !data || !data.labels || !data.datasets) {
+                        result = { success: false, message: "Invalid chart data provided. 'type', 'data.labels', and 'data.datasets' are required." };
+                    } else {
+                        const chartConfig = { type, data, options: options || {} };
+                        addOrUpdateMessage('system', '', null, false, false, '[Chart displayed]', false, false, false, false, true, chartConfig);
+                        result = { success: true, message: "Chart has been displayed to the user." };
+                    }
+                    break;
+                case "web_search":
+                    try {
+                        const searchResults = await doSearch(args.query);
+                        result = { success: true, message: `Found ${searchResults.length} results.`, data: { results: searchResults } };
+                    } catch (e) {
+                        console.error("Web search failed:", e);
+                        result = { success: false, message: `Error performing web search: ${e.message}` };
+                    }
+                    break;
+                case "fetch_page_content":
+                    const pageText = await fetchPageText(args.url);
+                    if (pageText.startsWith('Error fetching page content:')) {
+                        result = { success: false, message: pageText };
+                    } else {
+                        const truncatedText = pageText.length > 15000 ? pageText.substring(0, 15000) + '... [truncated]' : pageText;
+                        result = { success: true, message: "Page content fetched successfully.", data: { content: truncatedText } };
+                    }
+                    break;
                 case "execute_javascript":
                     const workerCode = `
                         self.onmessage = function(e) {
@@ -426,36 +516,23 @@ Your tools are for data management, information retrieval, and code execution.
                             const M8 = {
                                 files: {
                                     _data: files,
-                                    read(filename) {
-                                        if (typeof filename !== 'string') return undefined;
-                                        return this._data[filename];
-                                    },
-                                    write(filename, content) {
-                                        if (typeof filename !== 'string') return;
-                                        this._data[filename] = String(content);
-                                    },
-                                    list() {
-                                        return Object.keys(this._data);
-                                    }
+                                    read(filename) { if (typeof filename !== 'string') return undefined; return this._data[filename]; },
+                                    write(filename, content) { if (typeof filename !== 'string') return; this._data[filename] = String(content); },
+                                    list() { return Object.keys(this._data); }
                                 }
                             };
                             try {
                                 const func = new Function('M8', \`return (function() { \${code} })();\`);
                                 const result = func(M8);
                                 self.postMessage({ success: true, data: result, updatedFiles: M8.files._data });
-                            } catch (err) {
-                                self.postMessage({ success: false, message: err.message });
-                            }
+                            } catch (err) { self.postMessage({ success: false, message: err.message }); }
                         };
                     `;
                     const blob = new Blob([workerCode], { type: 'application/javascript' });
                     const worker = new Worker(URL.createObjectURL(blob));
                     const executionPromise = new Promise((resolve) => {
                         const timeout = args.timeout || 5000;
-                        const timer = setTimeout(() => {
-                            worker.terminate();
-                            resolve({ success: false, message: `Execution timed out after ${timeout}ms.` });
-                        }, timeout);
+                        const timer = setTimeout(() => { worker.terminate(); resolve({ success: false, message: `Execution timed out after ${timeout}ms.` }); }, timeout);
                         worker.onmessage = (e) => { clearTimeout(timer); worker.terminate(); resolve(e.data); };
                         worker.onerror = (e) => { clearTimeout(timer); worker.terminate(); resolve({ success: false, message: `An error occurred in the sandboxed code: ${e.message}`}); };
                         worker.postMessage({ code: args.code, files: JSON.parse(JSON.stringify(fileStore.value)) });
@@ -463,12 +540,10 @@ Your tools are for data management, information retrieval, and code execution.
                     try {
                         const execRes = await executionPromise;
                         if (execRes.success) {
-                            fileStore.value = execRes.updatedFiles; // Update main filestore
+                            fileStore.value = execRes.updatedFiles;
                             const dataToReturn = typeof execRes.data === 'object' ? JSON.stringify(execRes.data, null, 2) : execRes.data;
                             result = { success: true, data: { result: dataToReturn }, message: "Code executed successfully." };
-                        } else {
-                            result = { success: false, message: `Code execution failed: ${execRes.message}` };
-                        }
+                        } else { result = { success: false, message: `Code execution failed: ${execRes.message}` }; }
                     } catch (e) { result = { success: false, message: e.message }; }
                     break;
                 
@@ -483,30 +558,14 @@ Your tools are for data management, information retrieval, and code execution.
                     else { result = { success: false, message: `File "${args.filename}" not found.` }; }
                     break;
                 case "delete_file":
-                    if (fileStore.value[args.filename] !== undefined) {
-                        delete fileStore.value[args.filename];
-                        result = { success: true, message: `File "${args.filename}" deleted.` };
-                    } else { result = { success: false, message: `File "${args.filename}" not found.` }; }
+                    if (fileStore.value[args.filename] !== undefined) { delete fileStore.value[args.filename]; result = { success: true, message: `File "${args.filename}" deleted.` }; } 
+                    else { result = { success: false, message: `File "${args.filename}" not found.` }; }
                     break;
                  case "create_download_link":
                     const { filename, content: newContent } = args;
                     const fileContent = newContent !== undefined ? newContent : fileStore.value[filename];
-
-                    if (fileContent === undefined) {
-                        result = { success: false, message: `File "${filename}" not found and no content was provided.` };
-                    } else {
-                        const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-                        const url = URL.createObjectURL(blob);
-                        const downloadLinkHtml = `
-                            <p class="font-semibold mb-2 text-slate-700 dark:text-slate-200">Download Ready:</p>
-                            <a href="${url}" download="${filename}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-white rounded-md hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-sm font-medium">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                Download ${filename}
-                            </a>
-                        `;
-                        addOrUpdateMessage('system', downloadLinkHtml, null, false, false, `[Download link for ${filename}]`, true, false, false, true); // Use isRawHtml flag
-                        result = { success: true, message: `Successfully created a download link for "${filename}".` };
-                    }
+                    if (fileContent === undefined) { result = { success: false, message: `File "${filename}" not found and no content was provided.` }; } 
+                    else { const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const downloadLinkHtml = `<p class="font-semibold mb-2 text-slate-700 dark:text-slate-200">Download Ready:</p><a href="${url}" download="${filename}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-white rounded-md hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-sm font-medium"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Download ${filename}</a>`; addOrUpdateMessage('system', downloadLinkHtml, null, false, false, `[Download link for ${filename}]`, true, false, false, true); result = { success: true, message: `Successfully created a download link for "${filename}".` }; }
                     break;
                 case "get_weather_forecast": result = await handleWeatherForecast(args); break;
                 case "store_data": result = visGraphManager.addNode(args.key, args.value); break;
@@ -516,8 +575,6 @@ Your tools are for data management, information retrieval, and code execution.
                 case "search_data": result = visGraphManager.highlightSearch(args.query); break;
                 case "clear_store": result = visGraphManager.clearGraphData(); break;
                 case "list_data": const notes = visGraphManager.nodes.get().map(n => ({ id: n.id, body: n.body })); result = { success: true, message: `Found ${notes.length} entries.`, data: notes }; if (result.success) visGraphManager.zoomToFitAllNodes(); break;
-                case "search_wikipedia_articles": result = await handleWikipediaSearch(args); break;
-                case "get_wikipedia_article_details": result = await handleWikipediaDetails(args); break;
                 default: result = { success: false, message: `Unknown function: ${functionName}` };
             }
             if (result.success && isGraphTool(functionName)) {
@@ -546,20 +603,17 @@ Your tools are for data management, information retrieval, and code execution.
                          addOrUpdateMessage('system', `Successfully uploaded ${files.length} file(s): ${fileNames}`, null, false, false, `Uploaded ${fileNames}`, true, false, false, true);
                     }
                 };
-                reader.onerror = (e) => {
-                    addOrUpdateMessage('system', `Error reading file "${file.name}".`, null, false, true, `Error reading ${file.name}`, true);
-                };
+                reader.onerror = (e) => { addOrUpdateMessage('system', `Error reading file "${file.name}".`, null, false, true, `Error reading ${file.name}`, true); };
                 reader.readAsText(file);
             }
-            // Reset input value to allow uploading the same file again
             event.target.value = '';
         };
 
         const autoGrowTextarea=(ev)=>{const el=ev.target;el.style.height='auto';el.style.height=`${Math.min(el.scrollHeight,128)}px`;};
         const scrollToBottom=(force=false)=>{nextTick(()=>{if(chatContainerRef.value){const{scrollTop,scrollHeight,clientHeight}=chatContainerRef.value;if(force||scrollHeight-scrollTop-clientHeight<150)chatContainerRef.value.scrollTop=scrollHeight;}});};
-        const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false,isCodeDisplay=false, isRawHtml=false)=>{ if (!activeTab.value) return; const messages = activeTab.value.messages; const exIdx=id?messages.findIndex(m=>m.id===id):-1; const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,isCodeDisplay:isCodeDisplay,isRawHtml:isRawHtml,timestamp:Date.now()}; if(exIdx>-1)messages.splice(exIdx,1,msgData);else messages.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot);return msgData.id; };
-        const handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('-input');if(editingMessage.value){const idx=activeTab.value.messages.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){activeTab.value.messages[idx].parts[0].text=txt;activeTab.value.messages[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{ if (activeTab.value) { activeTab.value.activeTools = []; } addOrUpdateMessage('user',txt);const hist=activeTab.value.messages.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot).map(m=>{const parts=m.role==='tool'?m.parts:m.parts.map(p=>({text:p.text}));return{role:m.role,parts:parts};});await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
-        const fetchBotResponse=async(chatHist)=>{ if (!activeTab.value) { isLoading.value = false; return; } const botMsgId=addOrUpdateMessage('model','',null,true); isLoading.value=true; const currentDate = new Date().toISOString().slice(0, 10); const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n# Current Context\n- The current date is: ${currentDate}.`; const payload = { contents: chatHist, tools: geminiTools, systemInstruction: { parts: [{ text: dynamicSystemPrompt }] } }; try{const resp=await fetch(apiUrl.value,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const msgIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId); if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;activeTab.value.messages[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){activeTab.value.messages[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const parts=data.candidates[0].content.parts;let textResp="",funcCalls=[];for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall)funcCalls.push(p.functionCall);}if(funcCalls.length>0){ if (activeTab.value) { const newTools = funcCalls.map((fc, i) => ({ name: fc.name, status: i === 0 ? 'running' : 'pending' })); activeTab.value.activeTools.push(...newTools); } const toolResponses=[]; const startIndex = activeTab.value.activeTools.length - funcCalls.length; for (const [index, funcCall] of funcCalls.entries()) { const toolIndexInTab = startIndex + index; if (funcCall.name === 'execute_javascript' && funcCall.args.code) { const codeContent = '```javascript\n' + funcCall.args.code + '\n```'; const displayText = `▶️ **Executing Code**\n${codeContent}`; addOrUpdateMessage('model', displayText, null, false, false, displayText, false, false, true, false); } const funcRes = await handleToolCall(funcCall.name, funcCall.args); if (funcCall.name !== 'create_download_link') { addOrUpdateMessage('system',`<b>[${funcCall.name}]:</b> ${funcRes.message?.replace(/\n/g,'<br>') || 'Completed.'}`,null,false,!funcRes.success,`[Res: ${funcRes.message || 'Completed.'}]`,true, false, false, funcRes.isRawHtml); } let modelContent=funcRes;if(funcRes.success&&funcRes.data)modelContent=funcRes.data;toolResponses.push({functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:modelContent}}});if (activeTab.value && activeTab.value.activeTools[toolIndexInTab]) { activeTab.value.activeTools[toolIndexInTab].status = 'success'; if (activeTab.value.activeTools[toolIndexInTab + 1]) { activeTab.value.activeTools[toolIndexInTab + 1].status = 'running'; } } } const originalMessageIndex = activeTab.value.messages.findIndex(m => m.id === botMsgId); if (originalMessageIndex > -1) activeTab.value.messages.splice(originalMessageIndex, 1); const newHist=[...chatHist,{role:'model',parts:funcCalls.map(fc=>({functionCall:fc}))},{role:'tool',parts:toolResponses}]; await fetchBotResponse(newHist); }else if(textResp.trim()!==""){activeTab.value.messages[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];activeTab.value.messages[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);activeTab.value.messages[msgIdx].parts[0].text=textResp;activeTab.value.messages[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false; }},15);}else{ if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";activeTab.value.messages[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;activeTab.value.messages[msgIdx].isError=true;}else{activeTab.value.messages[msgIdx].parts[0].text=``;} activeTab.value.messages[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(mIdx>-1){activeTab.value.messages[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;activeTab.value.messages[mIdx].isError=true;activeTab.value.messages[mIdx].isStreaming=false;} if (activeTab.value) { activeTab.value.activeTools = []; } isLoading.value=false;}finally{const fIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&activeTab.value.messages[fIdx].isStreaming){activeTab.value.messages[fIdx].isStreaming=false;}if(!activeTab.value.messages.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
+        const addOrUpdateMessage=(role,text,id=null,stream=false,err=false,origMd=null,sysTool=false,graphSlot=false,isCodeDisplay=false,isRawHtml=false,isChartDisplaySlot=false,chartConfig=null)=>{ if(!activeTab.value)return;const messages=activeTab.value.messages;const exIdx=id?messages.findIndex(m=>m.id===id):-1;const msgData={id:id||Date.now().toString(36)+Math.random().toString(36).substring(2),role:role,parts:[{text:text}],originalMarkdown:origMd!==null?origMd:text,isStreaming:stream,isError:err,isSystemToolResponse:sysTool,isGraphDisplaySlot:graphSlot,isCodeDisplay:isCodeDisplay,isRawHtml:isRawHtml,isChartDisplaySlot:isChartDisplaySlot,chartConfig:chartConfig,timestamp:Date.now()};if(exIdx>-1)messages.splice(exIdx,1,msgData);else messages.push(msgData);scrollToBottom(role!=='model'||sysTool||graphSlot||isChartDisplaySlot);return msgData.id;};
+        const handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('-input');if(editingMessage.value){const idx=activeTab.value.messages.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){activeTab.value.messages[idx].parts[0].text=txt;activeTab.value.messages[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{if(activeTab.value){activeTab.value.activeTools=[];}addOrUpdateMessage('user',txt);const hist=activeTab.value.messages.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot&&!m.isChartDisplaySlot).map(m=>{const parts=m.role==='tool'?m.parts:m.parts.map(p=>({text:p.text}));return{role:m.role,parts:parts};});await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
+        const fetchBotResponse=async(chatHist)=>{ if (!activeTab.value) { isLoading.value = false; return; } const botMsgId=addOrUpdateMessage('model','',null,true); isLoading.value=true; const currentDate = new Date().toISOString().slice(0, 10); const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n# Current Context\n- The current date is: ${currentDate}.`; const payload = { contents: chatHist, tools: geminiTools, systemInstruction: { parts: [{ text: dynamicSystemPrompt }] } }; try{const resp=await fetch(apiUrl.value,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const msgIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId); if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;activeTab.value.messages[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){activeTab.value.messages[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const parts=data.candidates[0].content.parts;let textResp="",funcCalls=[];for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall)funcCalls.push(p.functionCall);}if(funcCalls.length>0){ if (activeTab.value) { const newTools = funcCalls.map((fc, i) => ({ name: fc.name, status: i === 0 ? 'running' : 'pending' })); activeTab.value.activeTools.push(...newTools); } const toolResponses=[]; const startIndex = activeTab.value.activeTools.length - funcCalls.length; for (const [index, funcCall] of funcCalls.entries()) { const toolIndexInTab = startIndex + index; if (funcCall.name === 'execute_javascript' && funcCall.args.code) { const codeContent = '```javascript\n' + funcCall.args.code + '\n```'; const displayText = `▶️ **Executing Code**\n${codeContent}`; addOrUpdateMessage('model', displayText, null, false, false, displayText, false, false, true, false); } const funcRes = await handleToolCall(funcCall.name, funcCall.args); if (funcCall.name !== 'create_download_link' && funcCall.name !== 'display_chart') { addOrUpdateMessage('system',`<b>[${funcCall.name}]:</b> ${funcRes.message?.replace(/\n/g,'<br>') || 'Completed.'}`,null,false,!funcRes.success,`[Res: ${funcRes.message || 'Completed.'}]`,true, false, false, funcRes.isRawHtml); } let modelContent=funcRes;if(funcRes.success&&funcRes.data)modelContent=funcRes.data;toolResponses.push({functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:modelContent}}});if (activeTab.value && activeTab.value.activeTools[toolIndexInTab]) { activeTab.value.activeTools[toolIndexInTab].status = 'success'; if (activeTab.value.activeTools[toolIndexInTab + 1]) { activeTab.value.activeTools[toolIndexInTab + 1].status = 'running'; } } } const originalMessageIndex = activeTab.value.messages.findIndex(m => m.id === botMsgId); if (originalMessageIndex > -1) activeTab.value.messages.splice(originalMessageIndex, 1); const newHist=[...chatHist,{role:'model',parts:funcCalls.map(fc=>({functionCall:fc}))},{role:'tool',parts:toolResponses}]; await fetchBotResponse(newHist); }else if(textResp.trim()!==""){activeTab.value.messages[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];activeTab.value.messages[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);activeTab.value.messages[msgIdx].parts[0].text=textResp;activeTab.value.messages[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false; }},15);}else{ if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";activeTab.value.messages[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;activeTab.value.messages[msgIdx].isError=true;}else{activeTab.value.messages[msgIdx].parts[0].text=``;} activeTab.value.messages[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(mIdx>-1){activeTab.value.messages[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;activeTab.value.messages[mIdx].isError=true;activeTab.value.messages[mIdx].isStreaming=false;} if (activeTab.value) { activeTab.value.activeTools = []; } isLoading.value=false;}finally{const fIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&activeTab.value.messages[fIdx].isStreaming){activeTab.value.messages[fIdx].isStreaming=false;}if(!activeTab.value.messages.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
         const startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
         const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
         
@@ -570,28 +624,19 @@ Your tools are for data management, information retrieval, and code execution.
             if (savedModel) modelName.value = savedModel;
             const isApiKeyMissing = !apiKey.value;
 
-            // Setup shared graph data
             visGraphManager.setSyncCallback(saveGraphToLocalStorage);
             const savedGraphData = localStorage.getItem(LS_GRAPH_DATA_KEY);
-            if (savedGraphData) {
-                try { visGraphManager.loadTabData(JSON.parse(savedGraphData)); }
-                catch(e) { console.error("Could not load shared graph data:", e); }
-            }
+            if (savedGraphData) { try { visGraphManager.loadTabData(JSON.parse(savedGraphData)); } catch(e) { console.error("Could not load shared graph data:", e); } }
 
-            // Setup shared file store
             const savedFileStore = localStorage.getItem(LS_FILE_STORE_KEY);
-            if (savedFileStore) {
-                try { fileStore.value = JSON.parse(savedFileStore); }
-                catch(e) { console.error("Could not load file store:", e); fileStore.value = {}; }
-            }
+            if (savedFileStore) { try { fileStore.value = JSON.parse(savedFileStore); } catch(e) { console.error("Could not load file store:", e); fileStore.value = {}; } }
 
-            // Setup tabs
             const savedSessions = localStorage.getItem(LS_SESSIONS_KEY);
             if (savedSessions) {
                 try {
                     const parsedTabs = JSON.parse(savedSessions);
                     if (Array.isArray(parsedTabs) && parsedTabs.length > 0) {
-                        tabs.value = parsedTabs.map(t => ({...t, activeTools: [], messages: t.messages.map(m => ({...m, isRawHtml: m.isRawHtml || false})) })); // Ensure old tabs have new properties
+                        tabs.value = parsedTabs.map(t => ({...t, activeTools: [], messages: t.messages.map(m => ({...m, isRawHtml: m.isRawHtml || false, isChartDisplaySlot: m.isChartDisplaySlot || false, chartConfig: m.chartConfig || null})) }));
                         activeTabId.value = parsedTabs[0].id;
                     } else { addNewTab(); }
                 } catch(e) { addNewTab(); }
