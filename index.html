@@ -33,6 +33,8 @@
   ></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+  <!-- Google Material Symbols Link -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
     .animate-blink { animation: blink 1s step-end infinite; }
@@ -110,18 +112,22 @@
                                     <li v-for="(tool, index) in tab.activeTools" :key="tool.name + index" class="flex items-center justify-center gap-1">
                                         <!-- Success State -->
                                         <span v-if="tool.status === 'success'" class="flex items-center text-green-600 dark:text-green-400">
-                                            <span class="rounded-full bg-green-100 dark:bg-green-500/20 p-1.5">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                            <span class="rounded-full bg-green-100 dark:bg-green-500/20 p-1.5 flex items-center justify-center">
+                                                <span class="material-symbols-outlined !text-xs !leading-none">check</span>
                                             </span>
                                         </span>
                                         <!-- Running State -->
                                         <span v-else-if="tool.status === 'running'" class="flex items-center justify-center gap-2 text-amber-600 dark:text-blue-400 animate-pulse">
-                                            <span class="h-6 w-6 rounded-full bg-amber-100 dark:bg-blue-500/20 text-center text-xs/6 font-bold flex items-center justify-center">{{ index + 1 }}</span>
+                                            <span class="h-6 w-6 rounded-full bg-amber-100 dark:bg-blue-500/20 flex items-center justify-center">
+                                                 <span class="material-symbols-outlined !text-base">{{ getToolIcon(tool.name) }}</span>
+                                            </span>
                                             <span class="font-semibold inline truncate max-w-[100px]">{{ tool.name }}</span>
                                         </span>
                                         <!-- Pending State -->
                                         <span v-else class="flex items-center justify-center gap-2 text-slate-500 dark:text-slate-400">
-                                            <span class="h-6 w-6 rounded-sm bg-slate-200 dark:bg-slate-600 text-center text-xs/6 font-bold text-slate-600 dark:text-slate-300 flex items-center justify-center">{{ index + 1 }}</span>
+                                            <span class="h-6 w-6 rounded-sm bg-slate-200 dark:bg-slate-600 flex items-center justify-center">
+                                                <span class="material-symbols-outlined !text-base text-slate-600 dark:text-slate-300">{{ getToolIcon(tool.name) }}</span>
+                                            </span>
                                             <span class="inline truncate max-w-[100px]">{{ tool.name }}</span>
                                         </span>
                                     </li>
@@ -135,14 +141,14 @@
                         
                         <button @click.stop="closeTab(tab.id)" v-if="tabs.length > 1"
                                 class="ml-2 -mr-1 p-0.5 rounded-full text-slate-500 hover:bg-slate-400/20 dark:text-slate-400 dark:hover:bg-slate-600/50">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <span class="material-symbols-outlined !text-sm !leading-none">delete</span>
                         </button>
                     </a>
                 </li>
             </ul>
         </div>
         <button @click="addNewTab" class="ml-2 p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100 flex-shrink-0" title="New Chat">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>
+            <span class="material-symbols-outlined !text-lg">add</span>
         </button>
     </div>
     
@@ -166,7 +172,7 @@
   <form @submit.prevent="handleSendMessage" class="p-3 sm:p-4 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800">
     <div class="relative flex items-end space-x-2">
       <button type="button" @click="triggerFileInput" :disabled="isLoading" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 disabled:opacity-50 transition-colors" title="Attach files">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a3 3 0 00-3 3v4a3 3 0 006 0V7a1 1 0 112 0v4a5 5 0 01-10 0V7a5 5 0 0110 0v4a1 1 0 11-2 0V7a3 3 0 00-3-3z" clip-rule="evenodd" /></svg>
+        <span class="material-symbols-outlined !text-xl">attach_file</span>
       </button>
       <input type="file" ref="fileInputRef" @change="handleFileUpload" multiple class="hidden" />
 
@@ -185,8 +191,8 @@
         </label>
       </div>
       <button type="submit" :disabled="isLoading || !newMessageText.trim() && !editingMessage" class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-white bg-zinc-800 rounded-full hover:bg-zinc-900 focus:ring-2 focus:outline-none focus:ring-zinc-500 disabled:bg-zinc-800/60 disabled:cursor-not-allowed transition-colors dark:bg-zinc-300 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:disabled:bg-zinc-300/60" title="Send message">
-        <span v-if="isLoading"><svg aria-hidden="true" class="w-5 h-5 animate-spin fill-zinc-400 dark:fill-zinc-500" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/><path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0492C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/></svg></span>
-        <span v-else><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" /></svg></span>
+        <span v-if="isLoading"><span class="material-symbols-outlined animate-spin !text-xl">progress_activity</span></span>
+        <span v-else><span class="material-symbols-outlined !text-xl">send</span></span>
       </button>
     </div>
   </form>
@@ -204,6 +210,7 @@
           <select id="model-select" v-model="settingsModel" class="w-full p-2 border border-slate-300 rounded-md focus:ring-zinc-500 focus:border-zinc-500 bg-white dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200">
             <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
           </select>
         </div>
         <div>
@@ -299,14 +306,14 @@
               <span v-if="message.isStreaming && !message.isError && !message.isSystemToolResponse" :class="['typing-cursor animate-blink mt-0.5', isUser ? 'float-right mr-1' : 'float-left ml-1']"></span>
           </div>
           <div v-if="!message.isError && !message.isSystemToolResponse && !message.isGraphDisplaySlot && !message.isChartDisplaySlot && !message.isCodeDisplay && (isUser || (!message.isStreaming && message.role === 'model'))" :class="['absolute top-1/2 -translate-y-1/2 flex items-center space-x-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-150', isUser ? 'left-0 -translate-x-full pr-2' : 'right-0 translate-x-full pl-2']">
-              <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" /></svg></button>
-              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg></button>
+              <button v-if="isUser" @click="handleEdit" title="Edit" class="p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><span class="material-symbols-outlined !text-sm !leading-none">edit</span></button>
+              <button @click="handleCopy" title="Copy" class="copy-button p-1.5 rounded-full bg-slate-100/80 hover:bg-slate-200 text-slate-500 border border-slate-300/70 focus:outline-none focus:ring-1 focus:ring-zinc-500 dark:bg-slate-700 dark:hover:bg-slate-600 dark:text-slate-400 dark:border-slate-600"><span class="material-symbols-outlined !text-sm !leading-none">content_copy</span></button>
           </div>
         </div>
       `
     };
     
-    // --- vis.js Graph Manager (no changes) ---
+    // --- vis.js Graph Manager (with sync callback fixes) ---
     const visGraphManager = {
         network: null, nodes: new vis.DataSet(), edges: new vis.DataSet(), activeContainerElement: null,
         selectionCallback: null, isDarkMode: () => document.documentElement.classList.contains('dark'),
@@ -315,7 +322,7 @@
             return { autoResize: true, height: '100%', width: '100%', nodes: { shape: 'box', borderWidth: 1.5, color: { background: nodeBg, border: nodeBorder, highlight: { background: isDark ? '#475569' : '#e2e8f0', border: isDark ? '#94a3b8' : '#64748b' } }, font: { color: fontColor, size: 14, face: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }, margin: { top: 10, right: 15, bottom: 10, left: 15 }, widthConstraint: { minimum: 100, maximum: 200 }, shapeProperties: { borderRadius: 4 } }, edges: { color: { color: edgeColor, highlight: isDark ? '#cbd5e1' : '#475569' }, arrows: { to: { enabled: false } }, smooth: { enabled: true, type: 'dynamic' } }, physics: { enabled: true, barnesHut: { gravitationalConstant: -10000, centralGravity: 0.1, springLength: 150, springConstant: 0.05, damping: 0.1, avoidOverlap: 0.2 }, solver: 'barnesHut', stabilization: { iterations: 1000, fit: true } }, interaction: { dragNodes: true, dragView: true, zoomView: true, hover: true, tooltipDelay: 200, navigationButtons: false } };
         },
         loadTabData(graphData) { this.nodes.clear(); this.edges.clear(); if (graphData && graphData.nodes) this.nodes.add(graphData.nodes); if (graphData && graphData.edges) this.edges.add(graphData.edges); if (this.network) this.network.setData({ nodes: this.nodes, edges: this.edges }); },
-        getCurrentGraphData() { if (this.network) this.network.storePositions(); return { nodes: this.nodes.get({ fields: ['id', 'label', 'body', 'x', 'y', 'title'] }), edges: this.edges.get({ fields: ['from', 'to', 'id'] }) }; },
+        getCurrentGraphData() { if (this.network) this.network.storePositions(); return { nodes: this.nodes.get({ fields: ['id', 'label', 'body', 'x', 'y', 'title', 'type'] }), edges: this.edges.get({ fields: ['from', 'to', 'id'] }) }; },
         ensureInitialized(el, cb) { if (!el || (this.network && this.activeContainerElement === el)) return; this.destroyVisualization(); this.activeContainerElement = el; this.selectionCallback = cb; const d = { nodes: this.nodes, edges: this.edges }; const o = this.getOptions(this.isDarkMode()); this.network = new vis.Network(el, d, o); this.network.on('click', (p) => { const nId = p.nodes.length > 0 ? p.nodes[0] : null; if (this.selectionCallback) this.selectionCallback(nId ? this.nodes.get(nId) : null); }); this.network.on('dragEnd', () => this.syncCallback && this.syncCallback()); this.network.on('stabilizationIterationsDone', () => { if (this.network) this.network.storePositions(); this.syncCallback && this.syncCallback(); }); },
         setSyncCallback(callback) { this.syncCallback = callback; },
         destroyVisualization() { if (this.network) { this.network.destroy(); this.network = null; } this.activeContainerElement = null; this.selectionCallback = null; },
@@ -323,12 +330,12 @@
         zoomToFitAllNodes(duration = 750) { if (this.network && this.nodes.length > 0) this.network.fit({ animation: { duration, easingFunction: 'easeInOutQuad' } }); },
         resetZoom(duration = 750) { if (this.network) this.network.moveTo({ scale: 1.0, animation: { duration, easingFunction: 'easeInOutQuad' } }); },
         setSelectedNode(nodeId) { if (!this.network) return; if (nodeId) { this.network.selectNodes([nodeId]); this.network.focus(nodeId, { scale: 1.2, animation: { duration: 500 } }); } else { this.network.unselectAll(); this.network.fit({ animation: { duration: 500 } }); } },
-        addNode(id, body = "") { if (!id || typeof id !== 'string' || id.trim() === "") return { success: false, message: "Key (ID) is required." }; id = id.trim(); if (this.nodes.get(id)) return { success: false, message: `Entry "${id}" already exists.` }; this.nodes.add({ id: id, label: id, body: body || "", title: body || " " }); this.zoomToFitAllNodes(); return { success: true, message: `Entry "${id}" created.` }; },
-        editNode(currentId, newIdParam, newBodyParam) { currentId = currentId ? currentId.trim() : null; const newId = newIdParam ? newIdParam.trim() : null; if (!currentId) return { success: false, message: "Current key is required." }; const n = this.nodes.get(currentId); if (!n) return { success: false, message: `Entry "${currentId}" not found.` }; const idChanged = newId && newId !== currentId; if (idChanged && this.nodes.get(newId)) return { success: false, message: `Cannot rename to "${newId}": key exists.` }; let bodyChanged = typeof newBodyParam === 'string' && n.body !== newBodyParam; if (!idChanged && !bodyChanged) return { success: true, message: `Entry "${currentId}" was not changed.` }; if (idChanged) { const nn = { ...n, id: newId, label: newId, body: bodyChanged ? newBodyParam : n.body, title: bodyChanged ? newBodyParam : (n.body || " ") }; delete nn.x; delete nn.y; const cE = this.edges.get({ filter: e => e.from === currentId || e.to === currentId }); const nE = cE.map(e => ({ ...e, from: e.from === currentId ? newId : e.from, to: e.to === currentId ? newId : e.to })); this.nodes.remove(currentId); this.edges.remove(cE.map(e => e.id)); this.nodes.add(nn); this.edges.add(nE); } else { this.nodes.update({ id: currentId, body: newBodyParam, title: newBodyParam || " " }); } const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === currentId) { const fId = idChanged ? newId : currentId; this.setSelectedNode(fId); if (this.selectionCallback) this.selectionCallback(this.nodes.get(fId)); } let msg = `Entry "${currentId}" updated.`; if (idChanged) msg += ` Renamed to "${newId}".`; if (bodyChanged) msg += ` Value updated.`; return { success: true, message: msg }; },
-        addLink(srcId, tgtId) { if (!srcId || !tgtId) return { success: false, message: "Source and target keys required." }; srcId = srcId.trim(); tgtId = tgtId.trim(); if (srcId === tgtId) return { success: false, message: "Cannot link to self." }; if (!this.nodes.get(srcId)) return { success: false, message: `Source "${srcId}" not found.` }; if (!this.nodes.get(tgtId)) return { success: false, message: `Target "${tgtId}" not found.` }; if (this.edges.get({ filter: e => (e.from === srcId && e.to === tgtId) || (e.from === tgtId && e.to === srcId) }).length > 0) { return { success: false, message: "Link already exists." }; } this.edges.add({ from: srcId, to: tgtId }); return { success: true, message: `Linked "${srcId}" to "${tgtId}".` }; },
-        deleteNode(id) { id = id.trim(); if (!this.nodes.get(id)) return { success: false, message: `Entry "${id}" not found.` }; const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === id) this.selectionCallback(null); this.nodes.remove(id); return { success: true, message: `Entry "${id}" deleted.` }; },
+        addNode(id, body = "", extraData = {}) { if (!id || typeof id !== 'string' || id.trim() === "") return { success: false, message: "Key (ID) is required." }; id = id.trim(); if (this.nodes.get(id)) return { success: false, message: `Entry "${id}" already exists.` }; const nodeData = { id, label: id, body: body || "", title: body || " ", ...extraData }; this.nodes.add(nodeData); this.zoomToFitAllNodes(); this.syncCallback && this.syncCallback(); return { success: true, message: `Entry "${id}" created.` }; },
+        editNode(currentId, newIdParam, newBodyParam) { currentId = currentId ? currentId.trim() : null; const newId = newIdParam ? newIdParam.trim() : null; if (!currentId) return { success: false, message: "Current key is required." }; const n = this.nodes.get(currentId); if (!n) return { success: false, message: `Entry "${currentId}" not found.` }; const idChanged = newId && newId !== currentId; if (idChanged && this.nodes.get(newId)) return { success: false, message: `Cannot rename to "${newId}": key exists.` }; let bodyChanged = typeof newBodyParam === 'string' && n.body !== newBodyParam; if (!idChanged && !bodyChanged) return { success: true, message: `Entry "${currentId}" was not changed.` }; if (idChanged) { const nn = { ...n, id: newId, label: newId, body: bodyChanged ? newBodyParam : n.body, title: bodyChanged ? newBodyParam : (n.body || " ") }; delete nn.x; delete nn.y; const cE = this.edges.get({ filter: e => e.from === currentId || e.to === currentId }); const nE = cE.map(e => ({ ...e, from: e.from === currentId ? newId : e.from, to: e.to === currentId ? newId : e.to })); this.nodes.remove(currentId); this.edges.remove(cE.map(e => e.id)); this.nodes.add(nn); this.edges.add(nE); } else { this.nodes.update({ id: currentId, body: newBodyParam, title: newBodyParam || " " }); } const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === currentId) { const fId = idChanged ? newId : currentId; this.setSelectedNode(fId); if (this.selectionCallback) this.selectionCallback(this.nodes.get(fId)); } let msg = `Entry "${currentId}" updated.`; if (idChanged) msg += ` Renamed to "${newId}".`; if (bodyChanged) msg += ` Value updated.`; this.syncCallback && this.syncCallback(); return { success: true, message: msg }; },
+        addLink(srcId, tgtId) { if (!srcId || !tgtId) return { success: false, message: "Source and target keys required." }; srcId = srcId.trim(); tgtId = tgtId.trim(); if (srcId === tgtId) return { success: false, message: "Cannot link to self." }; if (!this.nodes.get(srcId)) return { success: false, message: `Source "${srcId}" not found.` }; if (!this.nodes.get(tgtId)) return { success: false, message: `Target "${tgtId}" not found.` }; if (this.edges.get({ filter: e => (e.from === srcId && e.to === tgtId) || (e.from === tgtId && e.to === srcId) }).length > 0) { return { success: false, message: "Link already exists." }; } this.edges.add({ from: srcId, to: tgtId }); this.syncCallback && this.syncCallback(); return { success: true, message: `Linked "${srcId}" to "${tgtId}".` }; },
+        deleteNode(id) { id = id.trim(); if (!this.nodes.get(id)) return { success: false, message: `Entry "${id}" not found.` }; const sN = this.network ? this.network.getSelectedNodes() : []; if (sN.length > 0 && sN[0] === id) this.selectionCallback(null); this.nodes.remove(id); this.syncCallback && this.syncCallback(); return { success: true, message: `Entry "${id}" deleted.` }; },
         highlightSearch(q) { const nq = q ? q.trim().toLowerCase() : ""; const dC = this.getOptions(this.isDarkMode()).nodes.color; const u = this.nodes.map(n => ({ id: n.id, color: (nq && (n.label.toLowerCase().includes(nq) || (n.body && n.body.toLowerCase().includes(nq)))) ? dC.highlight : { background: dC.background, border: dC.border } })); if (u.length > 0) this.nodes.update(u); return { success: true, message: nq ? `Highlighting: "${q}".` : "Highlighting cleared." }; },
-        clearGraphData() { this.nodes.clear(); this.edges.clear(); if (this.selectionCallback) this.selectionCallback(null); return { success: true, message: "Data store for this tab cleared." }; }
+        clearGraphData() { this.nodes.clear(); this.edges.clear(); if (this.selectionCallback) this.selectionCallback(null); this.syncCallback && this.syncCallback(); return { success: true, message: "Data store for this tab cleared." }; }
     };
     
     createApp({
@@ -340,11 +347,9 @@
         const newMessageText = ref(''), editingMessage = ref(null);
         const isLoading = ref(false), chatContainerRef = ref(null), fileInputRef = ref(null);
         const activeTempGraphSlotId = ref(null);
-        const fileStore = ref({});
 
         const LS_SESSIONS_KEY = 'm8_chat_sessions_v6';
         const LS_GRAPH_DATA_KEY = 'm8_graph_data_v1';
-        const LS_FILE_STORE_KEY = 'm8_file_store_v1';
 
         const activeTab = computed(() => tabs.value.find(t => t.id === activeTabId.value));
         
@@ -357,12 +362,33 @@
         const settingsApiKey = ref('');
         const LS_API_KEY_KEY = 'm8_gemini_api_key_v2';
         const LS_MODEL_NAME_KEY = 'm8_gemini_model_name_v2';
+        
+        // --- Tool Icon Mapping ---
+        const toolIconMap = {
+          get_weather_forecast: 'thermometer',
+          web_search: 'search',
+          fetch_page_content: 'web_traffic',
+          store_data: 'database',
+          update_data: 'database',
+          link_data: 'database',
+          delete_data: 'database',
+          search_data: 'database',
+          clear_store: 'database',
+          list_data: 'database',
+          list_files: 'folder',
+          read_file: 'folder',
+          delete_file: 'folder',
+          create_download_link: 'folder',
+          execute_javascript: 'code_blocks',
+          display_chart: 'bar_chart',
+        };
+        const getToolIcon = (toolName) => {
+          return toolIconMap[toolName] || 'construction'; // Fallback icon
+        };
 
         const saveTabsToLocalStorage = () => { try { localStorage.setItem(LS_SESSIONS_KEY, JSON.stringify(tabs.value)); } catch (e) { console.error("Error saving sessions:", e); } };
         const saveGraphToLocalStorage = () => { try { localStorage.setItem(LS_GRAPH_DATA_KEY, JSON.stringify(visGraphManager.getCurrentGraphData())); } catch (e) { console.error("Error saving graph data:", e); } };
-        const saveFileStoreToLocalStorage = () => { try { localStorage.setItem(LS_FILE_STORE_KEY, JSON.stringify(fileStore.value)); } catch(e) { console.error("Error saving file store:", e); } };
         watch(tabs, saveTabsToLocalStorage, { deep: true });
-        watch(fileStore, saveFileStoreToLocalStorage, { deep: true });
         watch(activeTabId, (newId) => { if (newId) { scrollToBottom(true); } });
         
         // --- Settings & Tab Management ---
@@ -402,9 +428,14 @@ Your tools are for data management, information retrieval, and code execution.
 - **Step 3:** If a result seems promising, use 'fetch_page_content' with its URL to read the full text.
 - **Step 4:** You can then summarize or analyze this text for the user.
 
-## Data Storage (Graph)
-- You can store data as key-value pairs (nodes), link them, and search them.
-- This data store is SHARED across all your chat tabs. Changes in one tab are visible everywhere.
+## Unified Data & File Store (Graph)
+- You have a single, unified data store that works like a graph database. It can hold both regular data entries and files. Everything is shared across all chat tabs.
+- **Data Entries:** These are key-value pairs (nodes). Use tools like \`store_data\`, \`update_data\`, and \`link_data\` to manage them.
+- **Files:** Files are also nodes in the graph, but with a special type. You can upload them using the "Attach files" button. To manage them, use file-specific tools:
+  - \`list_files\`: See all available files.
+  - \`read_file\`: Read the content of a file.
+  - \`delete_file\`: Remove a file.
+  - \`create_download_link\`: Let the user download a file.
 - You can chain tool calls. For example, to store data from a web page, first read the page, then call 'store_data'.
 
 ## Chart Display
@@ -412,32 +443,20 @@ Your tools are for data management, information retrieval, and code execution.
 - You must specify a \`type\` (e.g., 'bar', 'line', 'pie', 'doughnut', 'radar') and the \`data\` object.
 - The \`data\` object needs \`labels\` (an array of strings) and \`datasets\` (an array of objects).
 - Each dataset needs a \`label\` (string) and \`data\` (an array of numbers).
-- You can optionally provide a \`title\` for the chart in the \`options\` object.
-- **Example:** To show a bar chart of fruit inventory.
-  - Call \`display_chart\` with:
-    - \`type\`: 'bar'
-    - \`data\`: { "labels": ["Apples", "Oranges", "Bananas"], "datasets": [{ "label": "Stock", "data": [50, 35, 60], "backgroundColor": ["#4ade80", "#fb923c", "#facc15"] }] }
-    - \`options\`: { "title": "Fruit Inventory" }
-
-## File System
-- You can manage a simple, in-memory file system. Files are stored as text and are SHARED across all chats.
-- Use \`list_files\` to see available files.
-- Use \`read_file\` and \`delete_file\` to manage them.
-- Use \`create_download_link\` to present a file to the user for download. You can create the file content on the spot or use a file from the store.
 
 ## JavaScript Execution with File I/O
-- For complex data processing, custom logic, or file manipulation, use the \`execute_javascript\` tool.
-- The code runs in a secure sandbox and CANNOT access the webpage, but it CAN access the file system via a special \`M8\` object.
+- For complex data processing or custom logic, use the \`execute_javascript\` tool.
+- The code runs in a sandbox but can access the unified store's files via a special \`M8\` object.
 - **You MUST use a \`return\` statement** to send a value back from your code.
 - **File System API within \`execute_javascript\`:**
-  - \`M8.files.read(filename: string): string | undefined\`: Reads a file's content.
-  - \`M8.files.write(filename: string, content: string): void\`: Creates or overwrites a file.
+  - \`M8.files.read(filename: string): string | undefined\`: Reads a file node's content.
+  - \`M8.files.write(filename: string, content: string): void\`: Creates or overwrites a file node in the store.
   - \`M8.files.list(): string[]\`: Lists all available filenames.
 - **Example:** To process an uploaded 'data.csv' and save a result.
   - Call \`execute_javascript\` with the code:
     \`const csvText = M8.files.read('data.csv'); if (!csvText) { return "File not found."; } const lines = csvText.split('\\n'); const processed = lines.map(l => l.toUpperCase()); M8.files.write('output.txt', processed.join('\\n')); return "Processed 'data.csv' and saved to 'output.txt'.";\`
 `;
-        const geminiTools = [{ functionDeclarations: [ { name: "get_weather_forecast", description: "Fetches the weather forecast. Provides a general summary by default, or a detailed hourly forecast for a specific date if provided.", parameters: { type: "OBJECT", properties: { location: { type: "STRING", description: "The city or location to get the weather for." }, date: { type: "STRING", description: "Optional. A specific date for an hourly forecast, in YYYY-MM-DD format." } }, required: ["location"] } }, { name:"store_data", description:"Stores a new data entry in the graph store.", parameters:{ type:"OBJECT", properties:{ key:{type:"STRING",description:"The unique key for the new entry."}, value:{type:"STRING",description:"Optional. The text/Markdown value."} }, required:["key"] } }, { name:"update_data", description:"Modifies an existing entry in the graph store.", parameters: { type: "OBJECT", properties: { key: {type: "STRING", description: "Current key of the entry to edit."}, new_key: {type: "STRING", description: "Optional. The new key."}, new_value: {type: "STRING", description: "Optional. The new value."} }, required: ["key"] } }, { name:"link_data", description:"Creates a link between two entries in the graph store.", parameters:{type:"OBJECT",properties:{source_key:{type:"STRING", description: "Source entry key."},target_key:{type:"STRING", description: "Target entry key."}},required:["source_key","target_key"]}}, { name:"delete_data", description:"Deletes an entry by key from the graph store.", parameters:{type:"OBJECT",properties:{key:{type:"STRING", description: "The key to delete."}},required:["key"]}}, { name:"search_data", description:"Searches and highlights entries in the graph store.", parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}}, { name:"clear_store", description:"Erases the entire graph data store.", parameters:{type:"OBJECT",properties:{}}}, { name:"list_data", description:"Lists all data entries from the graph store.", parameters:{type:"OBJECT",properties:{}}}, { name: "web_search", description: "Performs a web search using DuckDuckGo and returns the top 10 results.", parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The search query." } }, required: ["query"] } }, { name: "fetch_page_content", description: "Fetches the clean, visible text content from a given URL. Useful for reading articles or web pages found via web_search.", parameters: { type: "OBJECT", properties: { url: { type: "STRING", description: "The full URL of the web page to read." } }, required: ["url"] } }, { name: "display_chart", description: "Renders data as a chart. Supports types like 'bar', 'line', 'pie', 'doughnut', 'radar', and 'polarArea'.", parameters: { type: "OBJECT", properties: { type: { type: "STRING", description: "The type of chart to display. Common options: 'bar', 'line', 'pie', 'doughnut', 'radar'." }, data: { type: "OBJECT", description: "The data for the chart, following Chart.js structure.", properties: { labels: { type: "ARRAY", description: "An array of strings for the x-axis or segment labels.", items: { type: "STRING" } }, datasets: { type: "ARRAY", description: "An array of dataset objects to plot.", items: { type: "OBJECT", properties: { label: { type: "STRING", description: "The label for this dataset (appears in legend and tooltips)." }, data: { type: "ARRAY", description: "The numerical data points for this dataset.", items: { type: "NUMBER" } }, backgroundColor: { type: "ARRAY", description: "Optional. Background color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } }, borderColor: { type: "ARRAY", description: "Optional. Border color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } } }, required: ["label", "data"] } } }, required: ["labels", "datasets"] }, options: { type: "OBJECT", description: "Optional. Configuration options for the chart.", properties: { title: { type: "STRING", description: "The main title to display above the chart." } } } }, required: ["type", "data"] } }, { name: "execute_javascript", description: "Executes JavaScript code in a secure sandbox with file system access. Use the `M8.files` object to read/write files.", parameters: { type: "OBJECT", properties: { code: { type: "STRING", description: "The JavaScript code to execute. Must use `return` for output. Access files via `M8.files.read/write`." }, timeout: { type: "NUMBER", description: "Optional. The maximum execution time in milliseconds. Defaults to 5000." } }, required: ["code"] } }, { name: "list_files", description: "Lists the names of all currently stored files.", parameters: { type: "OBJECT", properties: {} } }, { name: "read_file", description: "Reads the content of a specified file.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to read." } }, required: ["filename"] } }, { name: "delete_file", description: "Deletes a specified file from storage.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to delete." } }, required: ["filename"] } }, { name: "create_download_link", description: "Presents a file to the user for download. If 'content' is provided, it creates the file on the fly. Otherwise, it uses an existing file specified by 'filename' from the internal file store.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file for the user to download." }, content: { type: "STRING", description: "Optional. The text content of the file. If omitted, the tool will try to find a file with the given 'filename' in the file store." } }, required: ["filename"] } } ]}];
+        const geminiTools = [{ functionDeclarations: [ { name: "get_weather_forecast", description: "Fetches the weather forecast. Provides a general summary by default, or a detailed hourly forecast for a specific date if provided.", parameters: { type: "OBJECT", properties: { location: { type: "STRING", description: "The city or location to get the weather for." }, date: { type: "STRING", description: "Optional. A specific date for an hourly forecast, in YYYY-MM-DD format." } }, required: ["location"] } }, { name:"store_data", description:"Stores a new data entry (a key-value pair, not a file) in the unified graph store.", parameters:{ type:"OBJECT", properties:{ key:{type:"STRING",description:"The unique key for the new data entry."}, value:{type:"STRING",description:"Optional. The text/Markdown value for the entry."} }, required:["key"] } }, { name:"update_data", description:"Modifies an existing data entry in the graph store. Cannot modify files.", parameters: { type: "OBJECT", properties: { key: {type: "STRING", description: "Current key of the data entry to edit."}, new_key: {type: "STRING", description: "Optional. The new key for the entry."}, new_value: {type: "STRING", description: "Optional. The new value for the entry."} }, required: ["key"] } }, { name:"link_data", description:"Creates a link between two entries (data or files) in the graph store.", parameters:{type:"OBJECT",properties:{source_key:{type:"STRING", description: "Source entry key."},target_key:{type:"STRING", description: "Target entry key."}},required:["source_key","target_key"]}}, { name:"delete_data", description:"Deletes a data entry by key from the graph store. This cannot delete files; use `delete_file` for that.", parameters:{type:"OBJECT",properties:{key:{type:"STRING", description: "The key of the data entry to delete."}},required:["key"]}}, { name:"search_data", description:"Searches and highlights entries (both data and files) in the graph store based on a query.", parameters:{type:"OBJECT",properties:{query:{type:"STRING", description: "The search term."}},required:["query"]}}, { name:"clear_store", description:"Erases the entire graph data store, including all data entries and files.", parameters:{type:"OBJECT",properties:{}}}, { name:"list_data", description:"Lists all data entries (not files) from the graph store.", parameters:{type:"OBJECT",properties:{}}}, { name: "web_search", description: "Performs a web search using DuckDuckGo and returns the top 10 results.", parameters: { type: "OBJECT", properties: { query: { type: "STRING", description: "The search query." } }, required: ["query"] } }, { name: "fetch_page_content", description: "Fetches the clean, visible text content from a given URL. Useful for reading articles or web pages found via web_search.", parameters: { type: "OBJECT", properties: { url: { type: "STRING", description: "The full URL of the web page to read." } }, required: ["url"] } }, { name: "display_chart", description: "Renders data as a chart. Supports types like 'bar', 'line', 'pie', 'doughnut', 'radar', and 'polarArea'.", parameters: { type: "OBJECT", properties: { type: { type: "STRING", description: "The type of chart to display. Common options: 'bar', 'line', 'pie', 'doughnut', 'radar'." }, data: { type: "OBJECT", description: "The data for the chart, following Chart.js structure.", properties: { labels: { type: "ARRAY", description: "An array of strings for the x-axis or segment labels.", items: { type: "STRING" } }, datasets: { type: "ARRAY", description: "An array of dataset objects to plot.", items: { type: "OBJECT", properties: { label: { type: "STRING", description: "The label for this dataset (appears in legend and tooltips)." }, data: { type: "ARRAY", description: "The numerical data points for this dataset.", items: { type: "NUMBER" } }, backgroundColor: { type: "ARRAY", description: "Optional. Background color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } }, borderColor: { type: "ARRAY", description: "Optional. Border color(s) for the data points. Can be a single color string or an array of strings.", items: { type: "STRING" } } }, required: ["label", "data"] } } }, required: ["labels", "datasets"] }, options: { type: "OBJECT", description: "Optional. Configuration options for the chart.", properties: { title: { type: "STRING", description: "The main title to display above the chart." } } } }, required: ["type", "data"] } }, { name: "execute_javascript", description: "Executes JavaScript code in a secure sandbox with file system access. Use the `M8.files` object to read/write file nodes in the store.", parameters: { type: "OBJECT", properties: { code: { type: "STRING", description: "The JavaScript code to execute. Must use `return` for output. Access files via `M8.files.read/write`." }, timeout: { type: "NUMBER", description: "Optional. The maximum execution time in milliseconds. Defaults to 5000." } }, required: ["code"] } }, { name: "list_files", description: "Lists the names of all files currently stored in the unified graph store.", parameters: { type: "OBJECT", properties: {} } }, { name: "read_file", description: "Reads the content of a specified file from the unified store.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to read." } }, required: ["filename"] } }, { name: "delete_file", description: "Deletes a specified file from the unified store. This cannot delete regular data entries.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file to delete." } }, required: ["filename"] } }, { name: "create_download_link", description: "Presents a file to the user for download. If 'content' is provided, it creates the file on the fly. Otherwise, it uses an existing file specified by 'filename' from the unified store.", parameters: { type: "OBJECT", properties: { filename: { type: "STRING", description: "The name of the file for the user to download." }, content: { type: "STRING", description: "Optional. The text content of the file. If omitted, the tool will try to find a file with the given 'filename' in the store." } }, required: ["filename"] } } ]}];
         const isGraphTool = (name) => ["store_data", "update_data", "link_data", "delete_data", "search_data", "clear_store", "list_data"].includes(name);
         
         const proxy = 'https://api.allorigins.win/raw?url=';
@@ -510,6 +529,7 @@ Your tools are for data management, information retrieval, and code execution.
                     }
                     break;
                 case "execute_javascript":
+                    const filesForWorker = visGraphManager.nodes.get({ filter: n => n.type === 'file' }).reduce((acc, node) => { acc[node.id] = node.body; return acc; }, {});
                     const workerCode = `
                         self.onmessage = function(e) {
                             const { code, files } = e.data;
@@ -535,12 +555,16 @@ Your tools are for data management, information retrieval, and code execution.
                         const timer = setTimeout(() => { worker.terminate(); resolve({ success: false, message: `Execution timed out after ${timeout}ms.` }); }, timeout);
                         worker.onmessage = (e) => { clearTimeout(timer); worker.terminate(); resolve(e.data); };
                         worker.onerror = (e) => { clearTimeout(timer); worker.terminate(); resolve({ success: false, message: `An error occurred in the sandboxed code: ${e.message}`}); };
-                        worker.postMessage({ code: args.code, files: JSON.parse(JSON.stringify(fileStore.value)) });
+                        worker.postMessage({ code: args.code, files: filesForWorker });
                     });
                     try {
                         const execRes = await executionPromise;
                         if (execRes.success) {
-                            fileStore.value = execRes.updatedFiles;
+                            const originalFilenames = new Set(Object.keys(filesForWorker));
+                            const updatedFilenames = new Set(Object.keys(execRes.updatedFiles));
+                            for (const filename of updatedFilenames) { visGraphManager.nodes.update({ id: filename, label: filename, body: execRes.updatedFiles[filename], type: 'file' }); }
+                            for (const filename of originalFilenames) { if (!updatedFilenames.has(filename)) { visGraphManager.nodes.remove(filename); } }
+                            saveGraphToLocalStorage();
                             const dataToReturn = typeof execRes.data === 'object' ? JSON.stringify(execRes.data, null, 2) : execRes.data;
                             result = { success: true, data: { result: dataToReturn }, message: "Code executed successfully." };
                         } else { result = { success: false, message: `Code execution failed: ${execRes.message}` }; }
@@ -548,37 +572,46 @@ Your tools are for data management, information retrieval, and code execution.
                     break;
                 
                 case "list_files":
-                    const filenames = Object.keys(fileStore.value);
+                    const fileNodes = visGraphManager.nodes.get({ filter: n => n.type === 'file' });
+                    const filenames = fileNodes.map(n => n.id);
                     if (filenames.length === 0) { result = { success: true, message: "No files are currently stored." }; }
                     else { result = { success: true, message: `Found ${filenames.length} file(s).`, data: filenames }; }
                     break;
                 case "read_file":
-                    const content = fileStore.value[args.filename];
-                    if (content !== undefined) { result = { success: true, message: `Content of "${args.filename}" retrieved.`, data: { content } }; }
+                    const nodeToRead = visGraphManager.nodes.get(args.filename);
+                    if (nodeToRead && nodeToRead.type === 'file') { result = { success: true, message: `Content of "${args.filename}" retrieved.`, data: { content: nodeToRead.body } }; }
+                    else if (nodeToRead) { result = { success: false, message: `Entry "${args.filename}" found, but it is not a file.` }; }
                     else { result = { success: false, message: `File "${args.filename}" not found.` }; }
                     break;
                 case "delete_file":
-                    if (fileStore.value[args.filename] !== undefined) { delete fileStore.value[args.filename]; result = { success: true, message: `File "${args.filename}" deleted.` }; } 
+                    const nodeToDelete = visGraphManager.nodes.get(args.filename);
+                    if (nodeToDelete && nodeToDelete.type === 'file') { result = visGraphManager.deleteNode(args.filename); }
+                    else if (nodeToDelete) { result = { success: false, message: `Cannot delete "${args.filename}" because it is not a file. Use delete_data instead.` }; }
                     else { result = { success: false, message: `File "${args.filename}" not found.` }; }
                     break;
                  case "create_download_link":
                     const { filename, content: newContent } = args;
-                    const fileContent = newContent !== undefined ? newContent : fileStore.value[filename];
-                    if (fileContent === undefined) { result = { success: false, message: `File "${filename}" not found and no content was provided.` }; } 
-                    else { const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const downloadLinkHtml = `<p class="font-semibold mb-2 text-slate-700 dark:text-slate-200">Download Ready:</p><a href="${url}" download="${filename}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-white rounded-md hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-sm font-medium"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg> Download ${filename}</a>`; addOrUpdateMessage('system', downloadLinkHtml, null, false, false, `[Download link for ${filename}]`, true, false, false, true); result = { success: true, message: `Successfully created a download link for "${filename}".` }; }
+                    let fileContent;
+                    if (newContent !== undefined) { fileContent = newContent; }
+                    else { const nodeForLink = visGraphManager.nodes.get(filename); if (nodeForLink && nodeForLink.type === 'file') { fileContent = nodeForLink.body; } }
+                    if (fileContent === undefined) { result = { success: false, message: `File "${filename}" not found in store and no content was provided.` }; } 
+                    else { const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' }); const url = URL.createObjectURL(blob); const downloadLinkHtml = `<p class="font-semibold mb-2 text-slate-700 dark:text-slate-200">Download Ready:</p><a href="${url}" download="${filename}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-800 text-white rounded-md hover:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-zinc-500 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-sm font-medium"><span class="material-symbols-outlined !text-base">download</span> Download ${filename}</a>`; addOrUpdateMessage('system', downloadLinkHtml, null, false, false, `[Download link for ${filename}]`, true, false, false, true); result = { success: true, message: `Successfully created a download link for "${filename}".` }; }
                     break;
                 case "get_weather_forecast": result = await handleWeatherForecast(args); break;
-                case "store_data": result = visGraphManager.addNode(args.key, args.value); break;
+                case "store_data": result = visGraphManager.addNode(args.key, args.value, { type: 'data' }); break;
                 case "update_data": result = visGraphManager.editNode(args.key, args.new_key, args.new_value); break;
                 case "link_data": result = visGraphManager.addLink(args.source_key, args.target_key); break;
-                case "delete_data": result = visGraphManager.deleteNode(args.key); break;
+                case "delete_data": 
+                    const nodeTypeCheck = visGraphManager.nodes.get(args.key);
+                    if (nodeTypeCheck && nodeTypeCheck.type === 'file') { result = { success: false, message: `Cannot delete "${args.key}" because it is a file. Use delete_file instead.`}; }
+                    else { result = visGraphManager.deleteNode(args.key); }
+                    break;
                 case "search_data": result = visGraphManager.highlightSearch(args.query); break;
                 case "clear_store": result = visGraphManager.clearGraphData(); break;
-                case "list_data": const notes = visGraphManager.nodes.get().map(n => ({ id: n.id, body: n.body })); result = { success: true, message: `Found ${notes.length} entries.`, data: notes }; if (result.success) visGraphManager.zoomToFitAllNodes(); break;
+                case "list_data": const dataNodes = visGraphManager.nodes.get({ filter: n => n.type !== 'file' }).map(n => ({ id: n.id, body: n.body })); result = { success: true, message: `Found ${dataNodes.length} data entries.`, data: dataNodes }; if (result.success) visGraphManager.zoomToFitAllNodes(); break;
                 default: result = { success: false, message: `Unknown function: ${functionName}` };
             }
             if (result.success && isGraphTool(functionName)) {
-                saveGraphToLocalStorage();
                 if (activeTempGraphSlotId.value) { const i = activeTab.value.messages.findIndex(m => m.id === activeTempGraphSlotId.value); if (i > -1) activeTab.value.messages.splice(i, 1); activeTempGraphSlotId.value = null; }
                 const newId = 'graph-slot-' + Date.now();
                 addOrUpdateMessage('system', '', newId, false, false, '', false, true, false, false);
@@ -592,15 +625,18 @@ Your tools are for data management, information retrieval, and code execution.
         const handleFileUpload = (event) => {
             const files = event.target.files;
             if (!files.length) return;
-            let uploadedCount = 0;
+            let uploadedFiles = [];
             for (const file of files) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    fileStore.value[file.name] = e.target.result;
-                    uploadedCount++;
-                    if (uploadedCount === files.length) {
-                         const fileNames = Array.from(files).map(f => `"${f.name}"`).join(', ');
-                         addOrUpdateMessage('system', `Successfully uploaded ${files.length} file(s): ${fileNames}`, null, false, false, `Uploaded ${fileNames}`, true, false, false, true);
+                    const content = e.target.result;
+                    const filename = file.name;
+                    visGraphManager.nodes.update({ id: filename, label: filename, body: content, type: 'file', title: `File: ${filename}\nSize: ${content.length} bytes` });
+                    uploadedFiles.push(filename);
+                    if (uploadedFiles.length === files.length) {
+                         saveGraphToLocalStorage();
+                         const fileNames = uploadedFiles.map(f => `"${f}"`).join(', ');
+                         addOrUpdateMessage('system', `Successfully uploaded/updated ${uploadedFiles.length} file(s): ${fileNames}`, null, false, false, `Uploaded ${fileNames}`, true, false, false, true);
                     }
                 };
                 reader.onerror = (e) => { addOrUpdateMessage('system', `Error reading file "${file.name}".`, null, false, true, `Error reading ${file.name}`, true); };
@@ -615,7 +651,7 @@ Your tools are for data management, information retrieval, and code execution.
         const handleSendMessage=async()=>{const txt=newMessageText.value.trim();if(!txt&&!editingMessage.value)return;isLoading.value=true;const ta=document.getElementById('-input');if(editingMessage.value){const idx=activeTab.value.messages.findIndex(m=>m.id===editingMessage.value.id);if(idx>-1){activeTab.value.messages[idx].parts[0].text=txt;activeTab.value.messages[idx].originalMarkdown=txt;}editingMessage.value=null;isLoading.value=false;}else{if(activeTab.value){activeTab.value.activeTools=[];}addOrUpdateMessage('user',txt);const hist=activeTab.value.messages.filter(m=>!m.isError&&!m.isSystemToolResponse&&!m.isGraphDisplaySlot&&!m.isChartDisplaySlot).map(m=>{const parts=m.role==='tool'?m.parts:m.parts.map(p=>({text:p.text}));return{role:m.role,parts:parts};});await fetchBotResponse(hist);}newMessageText.value='';if(ta)ta.style.height='auto';if(!editingMessage.value&&ta)ta.focus();};
         const fetchBotResponse=async(chatHist)=>{ if (!activeTab.value) { isLoading.value = false; return; } const botMsgId=addOrUpdateMessage('model','',null,true); isLoading.value=true; const currentDate = new Date().toISOString().slice(0, 10); const dynamicSystemPrompt = `${SYSTEM_PROMPT}\n\n# Current Context\n- The current date is: ${currentDate}.`; const payload = { contents: chatHist, tools: geminiTools, systemInstruction: { parts: [{ text: dynamicSystemPrompt }] } }; try{const resp=await fetch(apiUrl.value,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const msgIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId); if(msgIdx===-1){isLoading.value=false;return;}if(!resp.ok){const errData=await resp.json().catch(()=>({error:{message:"API error"}}));const errMsg=errData.error?.message||`Err: ${resp.status}`;activeTab.value.messages[msgIdx].parts[0].text=`<p>API Error:</p><p>${errMsg.replace(/\n/g,'<br>')}</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const data=await resp.json();if(!data.candidates||!data.candidates[0]||!data.candidates[0].content||!data.candidates[0].content.parts){activeTab.value.messages[msgIdx].parts[0].text=`<p>Error:</p><p>Invalid AI response.</p>`;activeTab.value.messages[msgIdx].isError=true;activeTab.value.messages[msgIdx].isStreaming=false;if(activeTab.value){activeTab.value.activeTools = [];} isLoading.value=false; return;}const parts=data.candidates[0].content.parts;let textResp="",funcCalls=[];for(const p of parts){if(p.text)textResp+=p.text;else if(p.functionCall)funcCalls.push(p.functionCall);}if(funcCalls.length>0){ if (activeTab.value) { const newTools = funcCalls.map((fc, i) => ({ name: fc.name, status: i === 0 ? 'running' : 'pending' })); activeTab.value.activeTools.push(...newTools); } const toolResponses=[]; const startIndex = activeTab.value.activeTools.length - funcCalls.length; for (const [index, funcCall] of funcCalls.entries()) { const toolIndexInTab = startIndex + index; if (funcCall.name === 'execute_javascript' && funcCall.args.code) { const codeContent = '```javascript\n' + funcCall.args.code + '\n```'; const displayText = `▶️ **Executing Code**\n${codeContent}`; addOrUpdateMessage('model', displayText, null, false, false, displayText, false, false, true, false); } const funcRes = await handleToolCall(funcCall.name, funcCall.args); if (funcCall.name !== 'create_download_link' && funcCall.name !== 'display_chart') { addOrUpdateMessage('system',`<b>[${funcCall.name}]:</b> ${funcRes.message?.replace(/\n/g,'<br>') || 'Completed.'}`,null,false,!funcRes.success,`[Res: ${funcRes.message || 'Completed.'}]`,true, false, false, funcRes.isRawHtml); } let modelContent=funcRes;if(funcRes.success&&funcRes.data)modelContent=funcRes.data;toolResponses.push({functionResponse:{name:funcCall.name,response:{name:funcCall.name,content:modelContent}}});if (activeTab.value && activeTab.value.activeTools[toolIndexInTab]) { activeTab.value.activeTools[toolIndexInTab].status = 'success'; if (activeTab.value.activeTools[toolIndexInTab + 1]) { activeTab.value.activeTools[toolIndexInTab + 1].status = 'running'; } } } const originalMessageIndex = activeTab.value.messages.findIndex(m => m.id === botMsgId); if (originalMessageIndex > -1) activeTab.value.messages.splice(originalMessageIndex, 1); const newHist=[...chatHist,{role:'model',parts:funcCalls.map(fc=>({functionCall:fc}))},{role:'tool',parts:toolResponses}]; await fetchBotResponse(newHist); }else if(textResp.trim()!==""){activeTab.value.messages[msgIdx].originalMarkdown=textResp;let curTxt="",charIdx=0;const streamInt=setInterval(()=>{if(charIdx<textResp.length){curTxt+=textResp[charIdx++];activeTab.value.messages[msgIdx].parts[0].text=curTxt;scrollToBottom();}else{clearInterval(streamInt);activeTab.value.messages[msgIdx].parts[0].text=textResp;activeTab.value.messages[msgIdx].isStreaming=false;scrollToBottom(true);isLoading.value=false; }},15);}else{ if(data.candidates[0].finishReason==="SAFETY"||data.promptFeedback?.blockReason){const reason=data.promptFeedback?.blockReason||"Safety";activeTab.value.messages[msgIdx].parts[0].text=`<p>Blocked:</p><p>Reason: ${reason}.</p>`;activeTab.value.messages[msgIdx].isError=true;}else{activeTab.value.messages[msgIdx].parts[0].text=``;} activeTab.value.messages[msgIdx].isStreaming=false;isLoading.value=false;}}catch(err){console.error('Fetch Error:',err);const mIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(mIdx>-1){activeTab.value.messages[mIdx].parts[0].text=`<p>Error:</p><p>${err.message}</p>`;activeTab.value.messages[mIdx].isError=true;activeTab.value.messages[mIdx].isStreaming=false;} if (activeTab.value) { activeTab.value.activeTools = []; } isLoading.value=false;}finally{const fIdx=activeTab.value.messages.findIndex(m=>m.id===botMsgId);if(fIdx>-1&&activeTab.value.messages[fIdx].isStreaming){activeTab.value.messages[fIdx].isStreaming=false;}if(!activeTab.value.messages.some(m=>m.isStreaming&&m.role==='model'))isLoading.value=false;scrollToBottom(true);}};
         const startEdit=(msg)=>{editingMessage.value=msg;newMessageText.value=msg.originalMarkdown;const ta=document.getElementById('-input');if(ta){ta.focus();nextTick(()=>autoGrowTextarea({target:ta}));}};
-        const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origSVG=btn.innerHTML;btn.innerHTML='<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-3.5 h-3.5 text-green-500"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>';setTimeout(()=>{btn.innerHTML=origSVG;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
+        const performCopy=(msg)=>{const txt=msg.originalMarkdown||msg.parts[0].text;navigator.clipboard.writeText(txt.trim()).then(()=>{const el=document.querySelector(`[data-message-id="${msg.id}"]`);if(el){const btn=el.querySelector('.copy-button');if(btn){const origHTML=btn.innerHTML;btn.innerHTML='<span class="material-symbols-outlined !text-sm !leading-none text-green-500">check</span>';setTimeout(()=>{btn.innerHTML=origHTML;},1500);}}}).catch(err=>console.error('Copy fail:',err));};
         
         onMounted(() => {
             const savedKey = localStorage.getItem(LS_API_KEY_KEY);
@@ -627,9 +663,6 @@ Your tools are for data management, information retrieval, and code execution.
             visGraphManager.setSyncCallback(saveGraphToLocalStorage);
             const savedGraphData = localStorage.getItem(LS_GRAPH_DATA_KEY);
             if (savedGraphData) { try { visGraphManager.loadTabData(JSON.parse(savedGraphData)); } catch(e) { console.error("Could not load shared graph data:", e); } }
-
-            const savedFileStore = localStorage.getItem(LS_FILE_STORE_KEY);
-            if (savedFileStore) { try { fileStore.value = JSON.parse(savedFileStore); } catch(e) { console.error("Could not load file store:", e); fileStore.value = {}; } }
 
             const savedSessions = localStorage.getItem(LS_SESSIONS_KEY);
             if (savedSessions) {
@@ -655,7 +688,7 @@ Your tools are for data management, information retrieval, and code execution.
             onUnmounted(() => { darkModeObserver.disconnect(); visGraphManager.destroyVisualization(); });
         });
 
-        return { tabs, activeTabId, activeTab, addNewTab, selectTab, closeTab, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, chatContainerRef, editingMessage, autoGrowTextarea, showSettingsModal, settingsModel, settingsApiKey, openSettingsModal, closeSettingsModal, saveSettings, fileInputRef, triggerFileInput, handleFileUpload };
+        return { tabs, activeTabId, activeTab, addNewTab, selectTab, closeTab, newMessageText, isLoading, handleSendMessage, startEdit, performCopy, chatContainerRef, editingMessage, autoGrowTextarea, showSettingsModal, settingsModel, settingsApiKey, openSettingsModal, closeSettingsModal, saveSettings, fileInputRef, triggerFileInput, handleFileUpload, getToolIcon };
       }
     }).mount('#app');
   </script>
