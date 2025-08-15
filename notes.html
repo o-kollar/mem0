@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inspired Notes App</title>
+  <!-- vis.js CSS for Network Graph -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+  <style>
+    :root {
+      --bg-color: #F8F9FA;
+      --editor-bg: #FFFFFF;
+      --text-color: #1c1c1c;
+      --border-color: #EAE2D1;
+      --primary-color: #4A90E2;
+      --highlight-color: #FFECB3;
+      --toolbar-bg: #262626;
+      --toolbar-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+      --font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-serif: "Georgia", "Times New Roman", serif;
+    }
+    body {
+      font-family: var(--font-sans-serif);
+      margin: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* --- Main Layout --- */
+    #app-container { 
+      width: 100%; 
+      height: 100%; 
+    }
+    #main-content {
+      flex-grow: 1;
+      padding: 40px;
+      overflow-y: auto;
+      display: flex;
+      justify-content: center;
+      position: relative;
+    }
+    .container { width: 100%; max-width: 720px; position: relative; }
+    
+    /* --- Top Container for Network Graph --- */
+    #top-network-container {
+      position: relative;
+      height: 250px;
+      margin-bottom: 1em;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      background-color: #fafafa;
+      box-sizing: border-box;
+      padding: 4px;
+    }
+    #main-network-graph {
+      width: 100%;
+      height: 100%;
+    }
+    #search-container {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10;
+        width: 80%;
+        max-width: 450px;
+        background-color: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-radius: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+    }
+    #search-input {
+        flex-grow: 1;
+        width: 100%;
+        padding: 10px 20px;
+        border: none;
+        background-color: transparent;
+        font-size: 16px;
+        outline: none;
+        color: #333;
+    }
+    #search-input::placeholder { color: #666; }
+    #clear-search-btn {
+        background: none; border: none; cursor: pointer; display: none;
+        padding: 8px; margin-right: 8px; color: #555;
+    }
+    #clear-search-btn svg { width: 18px; height: 18px; }
+
+    /* --- Main Content Buttons --- */
+    #main-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    #main-actions button {
+      padding: 8px 16px; border-radius: 6px; cursor: pointer;
+      border: 1px solid #DADCE0; background-color: #FFF;
+      font-weight: 500; font-size: 14px;
+    }
+    #main-actions button:hover { background-color: #F1F3F4; }
+    #deleteNoteBtn { color: #D93025; }
+    #deleteNoteBtn:hover { background-color: #FCE8E6 !important; }
+    
+    /* --- Editor & Toolbar --- */
+    #note-title-editor {
+        font-family: var(--font-serif); font-weight: 700; line-height: 1.3;
+        font-size: 2.2em; margin-bottom: 1em; outline: none;
+        padding: 0 48px; border: 1px solid transparent;
+    }
+    #note-content-editor {
+      background-color: var(--editor-bg); padding: 32px 48px; min-height: 400px;
+      font-size: 17px; line-height: 1.7; outline: none; border-radius: 8px;
+      border: 1px solid var(--border-color); caret-color: var(--primary-color);
+    }
+    #note-content-editor:focus { border-color: var(--primary-color); }
+    [data-placeholder]:empty:before {
+        content: attr(data-placeholder); color: #aaa; pointer-events: none; display: block;
+    }
+    #note-content-editor h2, #note-content-editor h3 {
+        font-family: var(--font-serif); font-weight: 700; line-height: 1.3;
+    }
+    #note-content-editor h2 { font-size: 1.6em; margin-bottom: 0.5em;}
+    #note-content-editor h3 { font-size: 1.3em; margin-bottom: 0.5em;}
+    
+    /* --- Popups and Menus --- */
+    #floating-toolbar {
+        position: absolute; z-index: 100; display: none; padding: 5px;
+        display: flex; gap: 4px;
+        align-items: center;
+    }
+    .liquid-glass {
+      position: relative; border-radius: 100vmax; isolation: isolate;
+      background-color: rgba(255, 255, 255, 0.25);
+      box-shadow: 0 6px 6px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+    .liquid-glass::before, .liquid-glass::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+    }
+    .liquid-glass::before { backdrop-filter: blur(3px); filter: url(#glass-distortion); z-index: -1; }
+    .liquid-glass::after {
+      box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5);
+      pointer-events: none;
+    }
+    #floating-toolbar button {
+        background: none; border: none; color: var(--toolbar-bg); cursor: pointer;
+        padding: 8px; border-radius: 50%; width: 38px; height: 38px;
+        display: grid; place-items: center; position: relative; z-index: 1;
+    }
+    #floating-toolbar button:hover { background-color: rgba(0, 0, 0, 0.1); }
+    #floating-toolbar button svg { width: 20px; height: 20px; }
+    .toolbar-separator {
+        width: 1px;
+        height: 20px;
+        background-color: rgba(0, 0, 0, 0.2);
+        margin: 0 4px;
+    }
+
+    /* --- Note Tagging System --- */
+    #tag-menu {
+        display: none; position: absolute; background: white; border-radius: 8px;
+        box-shadow: var(--toolbar-shadow); padding: 6px; width: 250px;
+        z-index: 101; max-height: 200px; overflow-y: auto;
+    }
+    #tag-menu div {
+        padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 15px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    #tag-menu div:hover, #tag-menu div.selected { background-color: #f0f0f0; }
+    a.note-tag {
+        background-color: #e3eefc; color: var(--primary-color);
+        padding: 2px 8px; border-radius: 12px; text-decoration: none;
+        font-weight: 500; cursor: pointer;
+    }
+    a.note-tag:hover { background-color: #d1e3fa; }
+
+    /* --- Other --- */
+    #action-buttons { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+    #action-buttons button {
+        flex-grow: 1; padding: 10px 15px; border-radius: 6px; cursor: pointer;
+        border: 1px solid var(--border-color); background-color: var(--editor-bg);
+    }
+    #action-buttons button:hover { background-color: #f1f3f4; }
+    #markdownOutput {
+        width: 100%; box-sizing: border-box; height: 200px; margin-top: 20px;
+        border-radius: 8px; font-family: monospace; font-size: 14px;
+        padding: 12px; border: 1px solid var(--border-color); background-color: #fafafa;
+    }
+    
+    /* --- Visualizations --- */
+    .viz-container {
+      display: none;
+      margin-top: 20px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      background-color: #fafafa;
+    }
+    .viz-container h3 { margin-top: 0; color: #555; }
+    #heatmap {
+      margin-top: 16px;
+    }
+    .apexcharts-legend, .apexcharts-toolbar {
+        display: none !important;
+    }
+    
+    /* Responsive & Effects */
+    @media (max-width: 768px) {
+      #main-content { padding: 20px 15px; }
+      #top-network-container { height: 220px; }
+      #search-container { width: 95%; top: 15px; }
+      #search-input { font-size: 14px; padding: 8px 15px; }
+      #note-title-editor { padding: 0 10px; font-size: 1.8em; }
+      #note-content-editor { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+<svg style="display: none;"><filter id="glass-distortion"><feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="3" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" /></filter></svg>
+
+<div id="app-container">
+  <main id="main-content">
+    <div class="container">
+      <div id="top-network-container">
+        <div id="search-container">
+            <input type="search" id="search-input" placeholder="Search & filter graph..." disabled>
+            <button id="clear-search-btn" title="Clear search">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+        </div>
+        <div id="main-network-graph"></div>
+      </div>
+      
+      <div id="main-actions">
+        <button id="newNoteBtn">New Note</button>
+        <button id="deleteNoteBtn">Delete Note</button>
+      </div>
+
+      <div id="floating-toolbar" class="liquid-glass">
+        <button class="format-btn" data-command="bold" title="Bold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></button>
+        <button class="format-btn" data-command="italic" title="Italic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg></button>
+        <button class="format-btn" id="createLinkBtn" title="Create Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg></button>
+        <div class="toolbar-separator"></div>
+        <button class="format-btn" data-command="formatBlock" data-value="H2" title="Heading 2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="9" y2="4"></line><line x1="15" y1="20" x2="15" y2="4"></line><line x1="4" y1="20" x2="20" y2="20"></line></svg></button>
+        <button class="format-btn" data-command="formatBlock" data-value="H3" title="Heading 3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="M20 18h-3a4 4 0 0 1-4-4V6"></path></svg></button>
+        <button class="format-btn" data-command="insertUnorderedList" title="Bulleted List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></button>
+        <button class="format-btn" data-command="formatBlock" data-value="P" title="Paragraph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.5a4.5 4.5 0 0 1-4.5 4.5H10v10M7 20v-14"></path></svg></button>
+      </div>
+      
+      <div id="tag-menu"></div>
+      
+      <input type="file" id="db-file-input" accept=".sqlite,.db" style="display: none;">
+
+      <div id="note-title-editor" contenteditable="true" data-placeholder="Your Title..."></div>
+      <div id="note-content-editor" contenteditable="true" data-placeholder="Start writing here..."></div>
+
+      <div id="action-buttons">
+        <button id="convertToMarkdownBtn">Convert to Markdown</button>
+        <button id="importDbBtn">Import Database</button>
+        <button id="exportDbBtn">Export Database</button>
+        <button id="showHeatmapBtn">Show Contribution Heatmap</button>
+      </div>
+      <textarea id="markdownOutput" placeholder="Markdown output appears here..." readonly></textarea>
+      
+      <div id="heatmap-container" class="viz-container">
+        <h3>Note Creation Heatmap</h3>
+        <div id="heatmap"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Scripts -->
+<script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+    window.pipeline = pipeline;
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+    // --- DOM Elements ---
+    const noteTitleEditor = document.getElementById('note-title-editor');
+    const noteContentEditor = document.getElementById('note-content-editor');
+    const newNoteBtn = document.getElementById('newNoteBtn');
+    const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+    const floatingToolbar = document.getElementById('floating-toolbar');
+    const tagMenu = document.getElementById('tag-menu');
+    const mainNetworkGraph = document.getElementById('main-network-graph');
+    const searchInput = document.getElementById('search-input');
+    const clearSearchBtn = document.getElementById('clear-search-btn');
+    const convertToMarkdownBtn = document.getElementById('convertToMarkdownBtn');
+    const importDbBtn = document.getElementById('importDbBtn'); // New
+    const dbFileInput = document.getElementById('db-file-input'); // New
+    const exportDbBtn = document.getElementById('exportDbBtn');
+    const showHeatmapBtn = document.getElementById('showHeatmapBtn');
+    const markdownOutput = document.getElementById('markdownOutput');
+    const heatmapContainer = document.getElementById('heatmap-container');
+    const heatmapEl = document.getElementById('heatmap');
+
+    // --- State & DB Management ---
+    let db;
+    let SQL; // Make SQL object available globally in this script
+    let state = { currentNoteId: null, lastSearchedIds: new Set() };
+    let debounceTimer, searchDebounceTimer;
+    let networkInstance = null;
+    let embedder = null; 
+    let heatmapInstance = null;
+    
+    // --- Constants ---
+    const SIMILARITY_THRESHOLD = 0.65; 
+    const MAX_EDGE_LENGTH = 450;
+    const DB_NAME = 'InspiredNotesDB';
+    const DB_STORE_NAME = 'databaseFile';
+    const DB_KEY = 'sqliteDb';
+    
+    // --- IndexedDB Helper ---
+    const idb = {
+        get: () => new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = () => request.result.createObjectStore(DB_STORE_NAME);
+            request.onsuccess = () => {
+                const tx = request.result.transaction(DB_STORE_NAME, 'readonly');
+                tx.objectStore(DB_STORE_NAME).get(DB_KEY).onsuccess = (e) => resolve(e.target.result);
+                tx.oncomplete = () => request.result.close();
+            };
+            request.onerror = (e) => reject(e.target.error);
+        }),
+        set: (value) => new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = () => request.result.createObjectStore(DB_STORE_NAME);
+            request.onsuccess = () => {
+                const tx = request.result.transaction(DB_STORE_NAME, 'readwrite');
+                tx.objectStore(DB_STORE_NAME).put(value, DB_KEY);
+                tx.oncomplete = () => { request.result.close(); resolve(); };
+            };
+            request.onerror = (e) => reject(e.target.error);
+        }),
+    };
+    async function persistDb() {
+        if (!db) return;
+        const data = db.export();
+        await idb.set(data);
+    }
+    const debouncedPersist = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(persistDb, 750); };
+
+    // --- Semantic Search & Embedding ---
+    async function generateEmbedding(text) {
+        if (!embedder || !text) return null;
+        try {
+            const embedding = await embedder(text, { pooling: 'mean', normalize: true });
+            return embedding.data;
+        } catch (e) {
+            console.error("Embedding generation failed:", e);
+            return null;
+        }
+    }
+    
+    function cosineSimilarity(vecA, vecB) {
+        let dotProduct = 0;
+        for (let i = 0; i < vecA.length; i++) { dotProduct += vecA[i] * vecB[i]; }
+        return dotProduct;
+    }
+    
+    async function performSearch(query) {
+        if (!query) {
+            highlightNetworkNodes([]);
+            return;
+        }
+        
+        const queryEmbedding = await generateEmbedding(query);
+        if (!queryEmbedding) return;
+
+        const allNotesRes = db.exec("SELECT id, title, embedding FROM notes");
+        if (allNotesRes.length === 0) return;
+
+        const notesWithScores = allNotesRes[0].values.map(row => {
+            const [id, title, embeddingBlob] = row;
+            if (!embeddingBlob) return { note: { id, title }, score: -1 };
+            const noteEmbedding = new Float32Array(embeddingBlob.buffer);
+            const score = cosineSimilarity(queryEmbedding, noteEmbedding);
+            return { note: { id, title }, score };
+        })
+        .filter(item => item.score > 0.35)
+        .sort((a, b) => b.score - a.score);
+
+        highlightNetworkNodes(notesWithScores);
+    }
+
+    // --- Visualization Logic ---
+    function highlightNetworkNodes(searchResults) {
+        if (!networkInstance) return;
+        const nodesToUpdate = [];
+        const newSearchedIds = new Set(searchResults.map(r => r.note.id));
+        const mapScoreToSize = (score) => 15 + (score - 0.35) * 30;
+        const mapScoreToColor = (score) => {
+            const t = (score - 0.35) / 0.65;
+            const r = Math.round(255 + (255 - 255) * t); 
+            const g = Math.round(236 + (165 - 236) * t);
+            const b = Math.round(179 + (0 - 179) * t);
+            return `rgb(${r},${g},${b})`;
+        };
+
+        for (const id of state.lastSearchedIds) {
+            if (!newSearchedIds.has(id)) {
+                nodesToUpdate.push({
+                    id: id,
+                    color: id === state.currentNoteId ? '#FFECB3' : '#e3eefc',
+                    borderWidth: id === state.currentNoteId ? 2 : 1,
+                    size: undefined
+                });
+            }
+        }
+        
+        searchResults.forEach(result => {
+            const { id } = result.note;
+            const { score } = result;
+            const isSelected = id === state.currentNoteId;
+            nodesToUpdate.push({
+                id: id,
+                color: { background: mapScoreToColor(score), border: isSelected ? '#333' : '#FF9800' },
+                borderWidth: isSelected ? 4 : 2,
+                size: mapScoreToSize(score)
+            });
+        });
+
+        if (nodesToUpdate.length > 0) {
+            networkInstance.body.data.nodes.update(nodesToUpdate);
+        }
+        state.lastSearchedIds = newSearchedIds;
+    }
+
+    async function renderNetwork() {
+        const allNotes = await getAllNotes(true, true);
+        if (allNotes.length === 0 && networkInstance) {
+            networkInstance.setData({nodes: [], edges: []});
+            return;
+        }
+
+        const nodes = new vis.DataSet(allNotes.map(note => ({
+            id: note.id, label: note.title || 'Untitled Note', shape: 'box', margin: 10,
+            color: note.id == state.currentNoteId ? '#FFECB3' : '#e3eefc',
+            borderWidth: note.id == state.currentNoteId ? 2 : 1,
+            font: { color: note.id == state.currentNoteId ? '#333' : '#555', size: 14 }
+        })));
+        
+        const implicitEdges = [];
+        const notesWithEmbeddings = allNotes.filter(n => n.embedding);
+        for (let i = 0; i < notesWithEmbeddings.length; i++) {
+            for (let j = i + 1; j < notesWithEmbeddings.length; j++) {
+                const noteA = notesWithEmbeddings[i];
+                const noteB = notesWithEmbeddings[j];
+                const vecA = new Float32Array(noteA.embedding.buffer);
+                const vecB = new Float32Array(noteB.embedding.buffer);
+                const similarity = cosineSimilarity(vecA, vecB);
+                if (similarity > SIMILARITY_THRESHOLD) {
+                    implicitEdges.push({
+                        from: noteA.id, to: noteB.id,
+                        length: MAX_EDGE_LENGTH * (1 - similarity),
+                        dashes: true, color: '#cccccc', width: 1
+                    });
+                }
+            }
+        }
+        
+        const explicitEdges = [];
+        const tempDiv = document.createElement('div');
+        allNotes.forEach(note => {
+            tempDiv.innerHTML = note.content;
+            const links = tempDiv.querySelectorAll('a.note-tag[data-note-id]');
+            links.forEach(link => {
+                const toId = parseInt(link.dataset.noteId, 10);
+                if (toId) { 
+                    explicitEdges.push({ from: note.id, to: toId, arrows: 'to', color: '#888' }); 
+                }
+            });
+        });
+
+        const allEdges = [...explicitEdges, ...implicitEdges];
+        const edges = new vis.DataSet(allEdges);
+
+        const data = { nodes: nodes, edges: edges };
+        
+        if (networkInstance) {
+            networkInstance.setData(data);
+        } else {
+            const options = {
+                interaction: { hover: true, tooltipDelay: 200 },
+                nodes: { borderWidth: 1, shapeProperties: { borderRadius: 4 } },
+                edges: { smooth: { type: 'continuous' } },
+                physics: {
+                    solver: 'barnesHut',
+                    barnesHut: {
+                        gravitationalConstant: -8000, springConstant: 0.1,
+                        springLength: 200, avoidOverlap: 0.1
+                    },
+                    stabilization: { iterations: 300 }
+                }
+            };
+            networkInstance = new vis.Network(mainNetworkGraph, data, options);
+            networkInstance.on('selectNode', (params) => { if (params.nodes.length > 0) selectNote(params.nodes[0]); });
+        }
+    }
+
+    async function renderHeatmap() {
+        const isVisible = heatmapContainer.style.display === 'block';
+        if (isVisible) {
+            heatmapContainer.style.display = 'none';
+            showHeatmapBtn.textContent = 'Show Contribution Heatmap';
+            if (heatmapInstance) { heatmapInstance.destroy(); heatmapInstance = null; }
+            return;
+        }
+
+        heatmapContainer.style.display = 'block';
+        showHeatmapBtn.textContent = 'Hide Heatmap';
+        heatmapEl.innerHTML = 'Loading heatmap...';
+
+        const notes = await getAllNotes();
+        if (notes.length === 0) { heatmapEl.innerHTML = 'No notes to display.'; return; }
+        
+        function getWeekNumber(d) {
+            d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+        const counts = {};
+        const weekLabels = new Set();
+        notes.forEach(note => {
+            const date = new Date(note.id);
+            const year = date.getFullYear();
+            const week = getWeekNumber(date);
+            const dayOfWeek = date.getDay();
+            const weekKey = `${year}-W${String(week).padStart(2, '0')}`;
+            weekLabels.add(weekKey);
+            if (!counts[weekKey]) counts[weekKey] = {};
+            counts[weekKey][dayOfWeek] = (counts[weekKey][dayOfWeek] || 0) + 1;
+        });
+        
+        const sortedWeeks = Array.from(weekLabels).sort();
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const series = dayNames.map((dayName, dayIndex) => ({
+            name: dayName,
+            data: sortedWeeks.map(weekKey => ({
+                x: weekKey,
+                y: (counts[weekKey] && counts[weekKey][dayIndex]) || 0
+            }))
+        }));
+
+        const options = {
+            series: series, chart: { height: 200, type: 'heatmap' },
+            plotOptions: {
+                heatmap: {
+                    shadeIntensity: 0.5, radius: 0, useFillColorAsStroke: true,
+                    colorScale: {
+                        ranges: [{ from: 0, to: 0, name: '0 notes', color: '#ebedf0' },
+                                 { from: 1, to: 2, name: '1-2 notes', color: '#9be9a8' },
+                                 { from: 3, to: 5, name: '3-5 notes', color: '#40c463' },
+                                 { from: 6, to: 10, name: '6-10 notes', color: '#30a14e' },
+                                 { from: 11, to: 999, name: '11+ notes', color: '#216e39' }]
+                    }
+                }
+            },
+            dataLabels: { enabled: false }, stroke: { width: 1 },
+            yaxis: { categories: dayNames, reversed: true },
+            xaxis: { labels: { show: false }, axisBorder: { show: false }, axisTicks: { show: false }},
+            tooltip: {
+                y: { formatter: (value, { seriesIndex, dataPointIndex, w }) =>
+                         `${value} notes on a ${w.globals.seriesNames[seriesIndex]} in ${w.globals.labels[dataPointIndex]}` }
+            },
+            title: { text: 'Note Creation Activity', align: 'center' },
+        };
+
+        if (heatmapInstance) { heatmapInstance.destroy(); }
+        heatmapEl.innerHTML = '';
+        heatmapInstance = new ApexCharts(heatmapEl, options);
+        heatmapInstance.render();
+    }
+
+    // --- Note Management (SQL) ---
+    async function getAllNotes(withContent = false, withEmbedding = false) {
+        if (!db) return [];
+        let columns = "id, title";
+        if (withContent) columns += ", content";
+        if (withEmbedding) columns += ", embedding";
+        const query = `SELECT ${columns} FROM notes ORDER BY id DESC`;
+        const res = db.exec(query);
+        if (res.length === 0) return [];
+        const colNames = res[0].columns;
+        return res[0].values.map(row => {
+            const note = {};
+            colNames.forEach((col, i) => note[col] = row[i]);
+            return note;
+        });
+    }
+
+    async function selectNote(id) {
+        if(searchInput.value.trim()){ clearSearchBtn.click(); }
+        state.currentNoteId = id;
+        localStorage.setItem('inspired-notes-app-last-note', id);
+        const stmt = db.prepare("SELECT title, content FROM notes WHERE id = :id");
+        stmt.bind({ ':id': id });
+        let note = null;
+        if (stmt.step()) note = stmt.getAsObject();
+        stmt.free();
+        if (note) {
+            noteTitleEditor.textContent = note.title;
+            noteContentEditor.innerHTML = note.content;
+        } else {
+            const allNotes = await getAllNotes();
+            if (allNotes.length > 0) await selectNote(allNotes[0].id);
+            else { noteTitleEditor.innerHTML = ''; noteContentEditor.innerHTML = '<p><br></p>'; }
+        }
+        await renderNetwork();
+    }
+    
+    async function createNewNote() {
+        const newId = new Date().getTime();
+        const title = 'Untitled Note';
+        const content = '<p><br></p>';
+        const textToEmbed = title;
+        const embeddingData = await generateEmbedding(textToEmbed);
+        const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
+        db.run("INSERT INTO notes (id, title, content, embedding) VALUES (:id, :title, :content, :embedding)", {
+            ':id': newId, ':title': title, ':content': content, ':embedding': embeddingBlob,
+        });
+        await persistDb();
+        await selectNote(newId);
+        noteContentEditor.focus();
+    }
+
+    async function deleteCurrentNote() {
+        if (!state.currentNoteId) return;
+        if (confirm('Are you sure you want to delete this note?')) {
+            db.run("DELETE FROM notes WHERE id = :id", { ':id': state.currentNoteId });
+            await persistDb();
+            const notes = await getAllNotes();
+            const nextNoteId = notes.length > 0 ? notes[0].id : null;
+            state.currentNoteId = nextNoteId;
+            if (nextNoteId) await selectNote(nextNoteId);
+            else await createNewNote();
+        }
+    }
+
+    async function updateNoteContent() {
+        if (!state.currentNoteId || !db) return;
+        const title = noteTitleEditor.textContent.trim() || 'Untitled Note';
+        const content = noteContentEditor.innerHTML;
+        const textToEmbed = `${title}\n${noteContentEditor.innerText}`;
+        const embeddingData = await generateEmbedding(textToEmbed);
+        const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
+        db.run("UPDATE notes SET title = :title, content = :content, embedding = :embedding WHERE id = :id", {
+            ':title': title, ':content': content, ':embedding': embeddingBlob, ':id': state.currentNoteId
+        });
+        await debouncedPersist();
+        await renderNetwork();
+    }
+
+    // --- Editor Logic & Tagging ---
+    let tagMenuState = { open: false, triggerMatch: null };
+    function format(command, value = null) { document.execCommand(command, false, value); noteContentEditor.focus(); hideAllMenus(); }
+    function hideAllMenus() { floatingToolbar.style.display = 'none'; tagMenu.style.display = 'none'; tagMenuState.open = false; }
+    
+    function handleSelectionChange() {
+        const selection = window.getSelection();
+        const mainContent = document.getElementById('main-content');
+        if (!selection || selection.rangeCount === 0 || !noteContentEditor.contains(selection.anchorNode)) {
+            hideAllMenus(); return;
+        }
+        const range = selection.getRangeAt(0);
+        const isCollapsed = selection.isCollapsed;
+        const rect = range.getBoundingClientRect();
+        const parentNode = range.startContainer.nodeType === 3 ? range.startContainer.parentNode : range.startContainer;
+        if ( (rect.width === 0 && rect.height === 0) || (isCollapsed && parentNode.tagName === 'P' && parentNode.textContent.trim() === '')) {
+            hideAllMenus(); return;
+        }
+        floatingToolbar.style.display = 'flex';
+        const toolbarHeight = floatingToolbar.offsetHeight;
+        const toolbarWidth = floatingToolbar.offsetWidth;
+        const margin = 8;
+        let topPosition;
+        if (rect.top > toolbarHeight + margin) {
+            topPosition = rect.top + mainContent.scrollTop - toolbarHeight - margin;
+        } else {
+            topPosition = rect.bottom + mainContent.scrollTop + margin;
+        }
+        const leftPosition = rect.left + (rect.width / 2) - (toolbarWidth / 2);
+        floatingToolbar.style.top = `${topPosition}px`;
+        floatingToolbar.style.left = `${leftPosition}px`;
+    }
+
+    async function handleTagTrigger() {
+        const selection = window.getSelection();
+        if (!selection.rangeCount || !selection.isCollapsed) return;
+        const range = selection.getRangeAt(0);
+        const textUpToCursor = range.startContainer.textContent.substring(0, range.startOffset);
+        const match = textUpToCursor.match(/\.\/([^\s]*)$/);
+        tagMenuState.triggerMatch = match;
+        if (match) {
+            const searchTerm = match[1].toLowerCase();
+            const allNotes = await getAllNotes();
+            const filteredNotes = allNotes.filter(note => note.id != state.currentNoteId && note.title.toLowerCase().includes(searchTerm));
+            if (filteredNotes.length > 0) { renderTagMenu(filteredNotes, range); } else { hideAllMenus(); }
+        } else if (tagMenuState.open) {
+            hideAllMenus();
+        }
+    }
+    function renderTagMenu(notes, range) {
+        tagMenu.innerHTML = '';
+        notes.forEach((note, index) => {
+            const item = document.createElement('div');
+            item.textContent = note.title;
+            item.dataset.noteId = note.id;
+            item.dataset.noteTitle = note.title;
+            if (index === 0) item.classList.add('selected');
+            tagMenu.appendChild(item);
+        });
+        const rect = range.getBoundingClientRect();
+        tagMenu.style.display = 'block';
+        tagMenu.style.top = `${rect.bottom + noteContentEditor.offsetTop}px`;
+        tagMenu.style.left = `${rect.left}px`;
+        tagMenuState.open = true;
+    }
+    function insertTag(noteId, noteTitle) {
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        range.setStart(range.startContainer, range.startOffset - tagMenuState.triggerMatch[0].length);
+        range.deleteContents();
+        const tagEl = document.createElement('a');
+        tagEl.href = '#';
+        tagEl.className = 'note-tag';
+        tagEl.dataset.noteId = noteId;
+        tagEl.contentEditable = 'false';
+        tagEl.textContent = noteTitle;
+        const spaceNode = document.createTextNode('\u00A0');
+        range.insertNode(spaceNode);
+        range.insertNode(tagEl);
+        range.setStartAfter(spaceNode);
+        range.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        hideAllMenus();
+        noteContentEditor.focus();
+    }
+    
+    // --- Utilities (Import/Export, Markdown) ---
+    async function handleFileImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const uInt8Array = new Uint8Array(e.target.result);
+                db = new SQL.Database(uInt8Array);
+                await persistDb();
+                alert('Database imported successfully! The application will now reload.');
+                window.location.reload();
+            } catch (err) {
+                console.error("Error importing database:", err);
+                alert("Failed to import database. Please ensure it is a valid SQLite file.");
+            }
+        };
+        reader.readAsArrayBuffer(file);
+        // Reset file input to allow importing the same file again
+        event.target.value = '';
+    }
+
+    async function exportDatabase() {
+        if (!db) { alert("Database is not ready yet."); return; }
+        if (state.currentNoteId) { await updateNoteContent(); await persistDb(); } 
+        const dbData = db.export();
+        const blob = new Blob([dbData], { type: "application/x-sqlite3" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
+        a.href = url; a.download = `notes-backup-${timestamp}.sqlite`; a.style.display = 'none';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+    function fullHtmlToMarkdown(htmlString) {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlString;
+        tempDiv.querySelectorAll('a.note-tag').forEach(tag => tag.replaceWith(document.createTextNode(`[[${tag.textContent}]]`)));
+        tempDiv.innerHTML = tempDiv.innerHTML.replace(/<p><br><\/p>/g, '<p></p>');
+        let markdown = '';
+        function processNode(node, listIndex = 1) {
+            let text = '';
+            if (node.nodeType === Node.ELEMENT_NODE) {
+                const tagName = node.tagName.toLowerCase();
+                let childrenMarkdown = '';
+                node.childNodes.forEach((child, index) => { childrenMarkdown += processNode(child, index + 1); });
+                switch (tagName) {
+                    case 'h2': text = `## ${childrenMarkdown.trim()}\n\n`; break;
+                    case 'h3': text = `### ${childrenMarkdown.trim()}\n\n`; break;
+                    case 'p': text = childrenMarkdown.trim() ? `${childrenMarkdown.trim()}\n\n` : ''; break;
+                    case 'ul': text = `${childrenMarkdown}\n`; break;
+                    case 'ol': text = `${childrenMarkdown}\n`; break;
+                    case 'li': text = `${node.parentNode.tagName.toLowerCase() === 'ol' ? `${listIndex}.` : '*'} ${childrenMarkdown.trim()}\n`; break;
+                    case 'b': case 'strong': text = `**${childrenMarkdown.trim()}**`; break;
+                    case 'i': case 'em': text = `*${childrenMarkdown.trim()}*`; break;
+                    case 'a': text = `[${childrenMarkdown.trim()}](${node.getAttribute('href') || ''})`; break;
+                    case 'br': text = '\n'; break;
+                    default: text = childrenMarkdown;
+                }
+            } else if (node.nodeType === Node.TEXT_NODE) { text = node.nodeValue; }
+            return text;
+        }
+        tempDiv.childNodes.forEach(node => { markdown += processNode(node); });
+        return markdown.replace(/\n{3,}/g, '\n\n').trim();
+    }
+    function convertToMarkdown() {
+        const titleText = noteTitleEditor.textContent.trim();
+        const titleMarkdown = `# ${titleText}`;
+        const contentMarkdown = fullHtmlToMarkdown(noteContentEditor.innerHTML);
+        markdownOutput.value = `${titleMarkdown}\n\n${contentMarkdown}`;
+    }
+
+    // --- Event Listeners ---
+    newNoteBtn.addEventListener('click', createNewNote);
+    deleteNoteBtn.addEventListener('click', deleteCurrentNote);
+    exportDbBtn.addEventListener('click', exportDatabase);
+    importDbBtn.addEventListener('click', () => {
+        if (confirm('Importing a database will overwrite all your current notes. Are you sure you want to continue?')) {
+            dbFileInput.click();
+        }
+    });
+    dbFileInput.addEventListener('change', handleFileImport);
+    showHeatmapBtn.addEventListener('click', renderHeatmap);
+    convertToMarkdownBtn.addEventListener('click', convertToMarkdown);
+    
+    let debounceUpdateTimer;
+    const debounceUpdate = () => { clearTimeout(debounceUpdateTimer); debounceUpdateTimer = setTimeout(updateNoteContent, 500); };
+    
+    noteContentEditor.addEventListener('input', () => { debounceUpdate(); handleTagTrigger(); });
+    noteTitleEditor.addEventListener('input', debounceUpdate);
+    document.addEventListener('selectionchange', handleSelectionChange);
+
+    noteContentEditor.addEventListener('keydown', (e) => {
+        if (tagMenuState.open) {
+            const items = Array.from(tagMenu.querySelectorAll('div'));
+            const selected = tagMenu.querySelector('.selected');
+            let currentIndex = items.indexOf(selected);
+            if (['ArrowUp', 'ArrowDown', 'Enter'].includes(e.key)) {
+                e.preventDefault();
+                if (e.key === 'ArrowUp') currentIndex = (currentIndex - 1 + items.length) % items.length;
+                else if (e.key === 'ArrowDown') currentIndex = (currentIndex + 1) % items.length;
+                else if (e.key === 'Enter' && selected) { insertTag(selected.dataset.noteId, selected.dataset.noteTitle); return; }
+                if(selected) selected.classList.remove('selected');
+                items[currentIndex].classList.add('selected');
+                items[currentIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'Escape') { e.preventDefault(); hideAllMenus(); }
+            return;
+        }
+        const getClosestAncestor = (node, selector) => (node.nodeType === Node.TEXT_NODE ? node.parentElement : node).closest(selector);
+        if (e.key === 'Enter' && !e.shiftKey) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) return;
+            const range = selection.getRangeAt(0);
+            const listItem = getClosestAncestor(range.startContainer, 'LI');
+            if (listItem && listItem.textContent.trim() === '') {
+                e.preventDefault(); format('formatBlock', 'P'); return;
+            }
+        }
+        if (e.key === 'Backspace') {
+            const selection = window.getSelection();
+            if (!selection.rangeCount || !selection.isCollapsed) return;
+            const range = selection.getRangeAt(0);
+            const container = range.startContainer;
+            const offset = range.startOffset;
+            let nodeBeforeCursor;
+            if (container.nodeType === Node.TEXT_NODE) {
+                if (offset === 0) nodeBeforeCursor = container.previousSibling; else return;
+            } else if (container.nodeType === Node.ELEMENT_NODE) {
+                if (offset > 0) nodeBeforeCursor = container.childNodes[offset - 1];
+            }
+            if (nodeBeforeCursor && nodeBeforeCursor.nodeType === Node.TEXT_NODE && nodeBeforeCursor.nodeValue === '\u00A0') {
+                const tagNode = nodeBeforeCursor.previousSibling;
+                if (tagNode && tagNode.nodeType === Node.ELEMENT_NODE && tagNode.classList.contains('note-tag')) {
+                    e.preventDefault(); tagNode.remove(); nodeBeforeCursor.remove(); debounceUpdate();
+                }
+            }
+        }
+    });
+
+    tagMenu.addEventListener('mousedown', (e) => { e.preventDefault(); const target = e.target.closest('div'); if (target) insertTag(target.dataset.noteId, target.dataset.noteTitle); });
+    noteContentEditor.addEventListener('click', (e) => { const tag = e.target.closest('a.note-tag'); if (tag && tag.dataset.noteId) { e.preventDefault(); selectNote(tag.dataset.noteId); } });
+    
+    floatingToolbar.addEventListener('mousedown', e => {
+        e.preventDefault();
+        const button = e.target.closest('button.format-btn');
+        if (!button) return;
+        if (button.id === 'createLinkBtn') {
+            const url = prompt('Enter URL');
+            if (url) format('createLink', url);
+        } else {
+            format(button.dataset.command, button.dataset.value);
+        }
+    });
+
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchDebounceTimer);
+        const query = e.target.value.trim();
+        clearSearchBtn.style.display = query ? 'block' : 'none';
+        searchDebounceTimer = setTimeout(() => performSearch(query), 300);
+    });
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        searchInput.dispatchEvent(new Event('input'));
+    });
+    
+    // --- App Initialization ---
+    async function initialize() {
+        const modelLoader = new Promise(async (resolve) => {
+            const loadingIndicator = document.createElement('div');
+            loadingIndicator.textContent = 'Loading AI model...';
+            loadingIndicator.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #888; z-index: 20;';
+            mainNetworkGraph.appendChild(loadingIndicator);
+            while (typeof window.pipeline === 'undefined') { await new Promise(r => setTimeout(r, 50)); }
+            embedder = await window.pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+                quantized: true,
+                progress_callback: data => {
+                     if (data.status === 'progress') {
+                        loadingIndicator.textContent = `Loading model: ${(data.progress).toFixed(1)}%`;
+                     }
+                }
+            });
+            loadingIndicator.remove();
+            searchInput.disabled = false;
+            resolve();
+        });
+
+        const sqlJsReady = initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+
+        try {
+            SQL = await sqlJsReady;
+            const dbFile = await idb.get();
+            if (dbFile) { db = new SQL.Database(dbFile); }
+            else { db = new SQL.Database(); db.run("CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT);"); await persistDb(); }
+
+            const hasEmbeddingCol = db.exec("PRAGMA table_info(notes);")[0].values.some(col => col[1] === 'embedding');
+            if (!hasEmbeddingCol) {
+                db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;");
+                await persistDb();
+            }
+            
+            await modelLoader;
+
+            const notesToBackfill = db.exec("SELECT id, title, content FROM notes WHERE embedding IS NULL")[0];
+            if (notesToBackfill && notesToBackfill.values.length > 0) {
+                console.log(`Backfilling embeddings for ${notesToBackfill.values.length} notes.`);
+                for (const row of notesToBackfill.values) {
+                    const [id, title, content] = row;
+                    const tempDiv = document.createElement('div'); tempDiv.innerHTML = content;
+                    const embeddingData = await generateEmbedding(`${title}\n${tempDiv.innerText}`);
+                    const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
+                    db.run("UPDATE notes SET embedding = :embedding WHERE id = :id", {':embedding': embeddingBlob, ':id': id});
+                }
+                await persistDb();
+                console.log("Embedding backfill complete.");
+            }
+
+            const notes = await getAllNotes();
+            if (notes.length === 0) { await createNewNote(); }
+            else {
+                const lastNoteId = localStorage.getItem('inspired-notes-app-last-note');
+                const noteExists = lastNoteId ? notes.some(n => n.id == lastNoteId) : false;
+                await selectNote(noteExists ? lastNoteId : notes[0].id);
+            }
+        } catch(err) {
+            console.error("Failed to initialize:", err);
+            alert("Error: Could not initialize the application. Check the console for details.");
+        }
+    }
+
+    initialize();
+</script>
+</body>
+</html>
