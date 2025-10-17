@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Inspired Notes App with 3D t-SNE</title>
+  <title>mem0</title>
+  <!-- Google Material Symbols -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
   <style>
     :root {
       --bg-color: #F8F9FA;
@@ -108,21 +110,73 @@
     #clear-search-btn {
         background: none; border: none; cursor: pointer; display: none;
         padding: 8px; margin-right: 8px; color: #555;
+        line-height: 0;
     }
-    #clear-search-btn svg { width: 18px; height: 18px; }
+    
+    .material-symbols-outlined {
+      font-size: 20px;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    #clear-search-btn .material-symbols-outlined {
+        font-size: 18px;
+    }
 
     #main-actions {
-      display: flex; justify-content: flex-end; gap: 10px;
-      margin-top: 10px; margin-bottom: 20px;
+      position: relative; /* For positioning the settings menu */
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 10px;
+      margin-bottom: 20px;
     }
     #main-actions button {
-      padding: 8px 16px; border-radius: 6px; cursor: pointer;
+      padding: 8px; border-radius: 6px; cursor: pointer;
       border: 1px solid #DADCE0; background-color: #FFF;
       font-weight: 500; font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
     }
     #main-actions button:hover { background-color: #F1F3F4; }
     #deleteNoteBtn { color: #D93025; }
     #deleteNoteBtn:hover { background-color: #FCE8E6 !important; }
+
+    #settings-menu {
+        position: absolute;
+        top: calc(100% + 5px);
+        right: 0;
+        background-color: var(--editor-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        z-index: 200;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 200px;
+    }
+    #settings-menu.hidden {
+        display: none;
+    }
+    #settings-menu button {
+        border: none;
+        background-color: transparent;
+        text-align: left;
+        padding: 8px 12px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+    }
+     #settings-menu button:hover {
+        background-color: #F1F3F4;
+     }
     
     #note-title-editor {
         font-family: var(--font-serif); font-weight: 700; line-height: 1.3;
@@ -130,7 +184,7 @@
         padding: 0 48px; border: 1px solid transparent;
     }
     #note-content-editor {
-      background-color: var(--editor-bg); padding: 32px 48px; min-height: 400px;
+      background-color: var(--editor-bg); padding: 32px 48px; min-height: 50vh; /* Increased min-height */
       font-size: 17px; line-height: 1.7; outline: none; border-radius: 8px;
       border: 1px solid var(--border-color); caret-color: var(--primary-color);
     }
@@ -152,18 +206,7 @@
     .liquid-glass::after { box-shadow: inset 2px 2px 1px 0 rgba(255, 255, 255, 0.5), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.5); pointer-events: none; }
     #floating-toolbar button { background: none; border: none; color: var(--toolbar-bg); cursor: pointer; padding: 8px; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; position: relative; z-index: 1; }
     #floating-toolbar button:hover { background-color: rgba(0, 0, 0, 0.1); }
-    #floating-toolbar button svg { width: 20px; height: 20px; }
     .toolbar-separator { width: 1px; height: 20px; background-color: rgba(0, 0, 0, 0.2); margin: 0 4px; }
-
-    #action-buttons { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; }
-    #action-buttons button { flex-grow: 1; padding: 10px 15px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border-color); background-color: var(--editor-bg); }
-    #action-buttons button:hover { background-color: #f1f3f4; }
-    #markdownOutput { width: 100%; box-sizing: border-box; height: 200px; margin-top: 20px; border-radius: 8px; font-family: monospace; font-size: 14px; padding: 12px; border: 1px solid var(--border-color); background-color: #fafafa; }
-    
-    .viz-container { display: none; margin-top: 20px; border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; background-color: #fafafa; }
-    .viz-container h3 { margin-top: 0; color: #555; }
-    #heatmap { margin-top: 16px; }
-    .apexcharts-legend, .apexcharts-toolbar { display: none !important; }
     
     @media (max-width: 768px) {
       #main-content { padding: 20px 15px; }
@@ -186,7 +229,7 @@
         <div id="search-container">
             <input type="search" id="search-input" placeholder="Search & filter notes..." disabled>
             <button id="clear-search-btn" title="Clear search">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <span class="material-symbols-outlined">close</span>
             </button>
         </div>
         <div id="main-network-graph"></div>
@@ -195,19 +238,26 @@
       <div id="search-results-container"></div>
       
       <div id="main-actions">
-        <button id="newNoteBtn">New Note</button>
-        <button id="deleteNoteBtn">Delete Note</button>
+        <button id="newNoteBtn" title="New Note"><span class="material-symbols-outlined">add_circle</span></button>
+        <button id="deleteNoteBtn" title="Delete Note"><span class="material-symbols-outlined">delete</span></button>
+        <button id="settingsBtn" title="Settings">
+            <span class="material-symbols-outlined">settings</span>
+        </button>
+        <div id="settings-menu" class="hidden">
+            <button id="importDbBtn"><span class="material-symbols-outlined">upload_file</span>Import mem0</button>
+            <button id="exportDbBtn"><span class="material-symbols-outlined">download_for_offline</span>Export mem0</button>
+        </div>
       </div>
 
       <div id="floating-toolbar" class="liquid-glass">
-        <button class="format-btn" data-command="bold" title="Bold"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path></svg></button>
-        <button class="format-btn" data-command="italic" title="Italic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="4" x2="10" y2="4"></line><line x1="14" y1="20" x2="5" y2="20"></line><line x1="15" y1="4" x2="9" y2="20"></line></svg></button>
-        <button class="format-btn" id="createLinkBtn" title="Create Link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"></path></svg></button>
+        <button class="format-btn" data-command="bold" title="Bold"><span class="material-symbols-outlined">format_bold</span></button>
+        <button class="format-btn" data-command="italic" title="Italic"><span class="material-symbols-outlined">format_italic</span></button>
+        <button class="format-btn" id="createLinkBtn" title="Create Link"><span class="material-symbols-outlined">link</span></button>
         <div class="toolbar-separator"></div>
-        <button class="format-btn" data-command="formatBlock" data-value="H2" title="Heading 2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"></polyline><line x1="9" y1="20" x2="9" y2="4"></line><line x1="15" y1="20" x2="15" y2="4"></line><line x1="4" y1="20" x2="20" y2="20"></line></svg></button>
-        <button class="format-btn" data-command="formatBlock" data-value="H3" title="Heading 3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h8"></path><path d="M4 18V6"></path><path d="M12 18V6"></path><path d="M20 18h-3a4 4 0 0 1-4-4V6"></path></svg></button>
-        <button class="format-btn" data-command="insertUnorderedList" title="Bulleted List"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg></button>
-        <button class="format-btn" data-command="formatBlock" data-value="P" title="Paragraph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 6.5a4.5 4.5 0 0 1-4.5 4.5H10v10M7 20v-14"></path></svg></button>
+        <button class="format-btn" data-command="formatBlock" data-value="H2" title="Heading 2"><span class="material-symbols-outlined">title</span></button>
+        <button class="format-btn" data-command="formatBlock" data-value="H3" title="Heading 3"><span class="material-symbols-outlined">format_size</span></button>
+        <button class="format-btn" data-command="insertUnorderedList" title="Bulleted List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+        <button class="format-btn" data-command="formatBlock" data-value="P" title="Paragraph"><span class="material-symbols-outlined">short_text</span></button>
       </div>
       
       <input type="file" id="db-file-input" accept=".sqlite,.db" style="display: none;">
@@ -215,18 +265,6 @@
       <div id="note-title-editor" contenteditable="true" data-placeholder="Your Title..."></div>
       <div id="note-content-editor" contenteditable="true" data-placeholder="Start writing here..."></div>
 
-      <div id="action-buttons">
-        <button id="convertToMarkdownBtn">Convert to Markdown</button>
-        <button id="importDbBtn">Import Database</button>
-        <button id="exportDbBtn">Export Database</button>
-        <button id="showHeatmapBtn">Show Contribution Heatmap</button>
-      </div>
-      <textarea id="markdownOutput" placeholder="Markdown output appears here..." readonly></textarea>
-      
-      <div id="heatmap-container" class="viz-container">
-        <h3>Note Creation Heatmap</h3>
-        <div id="heatmap"></div>
-      </div>
     </div>
   </main>
 </div>
@@ -238,7 +276,7 @@
 <script src="https://cdn.jsdelivr.net/gh/karpathy/tsnejs/tsne.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-<!-- CORRECTED: Single script tag with type="module" -->
+<!-- App Logic -->
 <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
     
@@ -253,14 +291,11 @@
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search-btn');
     const searchResultsContainer = document.getElementById('search-results-container');
-    const convertToMarkdownBtn = document.getElementById('convertToMarkdownBtn');
     const importDbBtn = document.getElementById('importDbBtn');
     const dbFileInput = document.getElementById('db-file-input');
     const exportDbBtn = document.getElementById('exportDbBtn');
-    const showHeatmapBtn = document.getElementById('showHeatmapBtn');
-    const markdownOutput = document.getElementById('markdownOutput');
-    const heatmapContainer = document.getElementById('heatmap-container');
-    const heatmapEl = document.getElementById('heatmap');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsMenu = document.getElementById('settings-menu');
 
     // --- State & DB Management ---
     let db;
@@ -268,14 +303,12 @@
     let state = { currentNoteId: null, searchResults: new Map() };
     let debounceTimer, searchDebounceTimer;
     let embedder = null; 
-    let heatmapInstance = null;
     
     // --- T-SNE & 3D Visualization State ---
     let three, scene, camera, renderer, controls, pointCloud;
     let tsneInstance, tsneIteration = 0, isTsneRunning = false, noteIndexMap = [];
     const TSNE_MAX_ITERATIONS = 300;
     const TSNE_VIEW_SIZE = 100;
-    // MODIFIED: Colors updated for black default
     const defaultColor = new THREE.Color('#000000');
     const selectedColor = new THREE.Color('#FFFF00');
     const searchMatchColor = new THREE.Color('#FF9800');
@@ -517,8 +550,6 @@
         }
     }
     
-    async function renderHeatmap() { /* ... unchanged ... */ }
-
     // --- Note Management (SQL) ---
     async function getAllNotes(withContent = false, withEmbedding = false) {
         if (!db) return [];
@@ -614,7 +645,7 @@
         floatingToolbar.style.left = `${leftPosition}px`;
     }
 
-    // --- Utilities (Import/Export, Markdown) ---
+    // --- Utilities (Import/Export) ---
     async function handleFileImport(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -644,8 +675,6 @@
         a.click();
         URL.revokeObjectURL(url);
     }
-    function fullHtmlToMarkdown(htmlString) { /* ... unchanged ... */ return ""; }
-    function convertToMarkdown() { /* ... unchanged ... */ }
 
     // --- Event Listeners ---
     newNoteBtn.addEventListener('click', createNewNote);
@@ -653,8 +682,6 @@
     exportDbBtn.addEventListener('click', exportDatabase);
     importDbBtn.addEventListener('click', () => { if (confirm('Importing a database will overwrite all your current notes. Are you sure?')) { dbFileInput.click(); } });
     dbFileInput.addEventListener('change', handleFileImport);
-    showHeatmapBtn.addEventListener('click', renderHeatmap);
-    convertToMarkdownBtn.addEventListener('click', convertToMarkdown);
     
     let debounceUpdateTimer;
     const debounceUpdate = () => { clearTimeout(debounceUpdateTimer); debounceUpdateTimer = setTimeout(updateNoteContent, 500); };
@@ -690,6 +717,15 @@
             selectNote(item.dataset.noteId);
         }
     });
+    
+    settingsBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        settingsMenu.classList.toggle('hidden');
+    });
+    window.addEventListener('click', () => {
+        settingsMenu.classList.add('hidden');
+    });
+    settingsMenu.addEventListener('click', e => e.stopPropagation());
     
     // --- App Initialization ---
     async function initialize() {
