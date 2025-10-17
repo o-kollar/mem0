@@ -153,13 +153,13 @@
         box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         z-index: 200;
         padding: 8px;
-        display: flex;
+        display: none;
         flex-direction: column;
         gap: 4px;
         min-width: 200px;
     }
-    #settings-menu.hidden {
-        display: none;
+    #settings-menu.visible {
+        display: flex;
     }
     #settings-menu button {
         border: none;
@@ -184,7 +184,7 @@
         padding: 0 48px; border: 1px solid transparent;
     }
     #note-content-editor {
-      background-color: var(--editor-bg); padding: 32px 48px; min-height: 50vh; /* Increased min-height */
+      background-color: var(--editor-bg); padding: 32px 48px; min-height: 50vh;
       font-size: 17px; line-height: 1.7; outline: none; border-radius: 8px;
       border: 1px solid var(--border-color); caret-color: var(--primary-color);
     }
@@ -207,6 +207,40 @@
     #floating-toolbar button { background: none; border: none; color: var(--toolbar-bg); cursor: pointer; padding: 8px; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; position: relative; z-index: 1; }
     #floating-toolbar button:hover { background-color: rgba(0, 0, 0, 0.1); }
     .toolbar-separator { width: 1px; height: 20px; background-color: rgba(0, 0, 0, 0.2); margin: 0 4px; }
+    
+    #slash-command-menu {
+        position: absolute;
+        z-index: 200;
+        background-color: var(--editor-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+        padding: 8px;
+        display: none;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 220px;
+    }
+    #slash-command-menu.visible {
+        display: flex;
+    }
+    .command-item {
+        border: none;
+        background-color: transparent;
+        text-align: left;
+        padding: 8px 12px;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    .command-item:hover, .command-item.selected {
+        background-color: #F1F3F4;
+    }
     
     @media (max-width: 768px) {
       #main-content { padding: 20px 15px; }
@@ -260,6 +294,25 @@
         <button class="format-btn" data-command="formatBlock" data-value="P" title="Paragraph"><span class="material-symbols-outlined">short_text</span></button>
       </div>
       
+      <div id="slash-command-menu">
+        <div class="command-item" data-command="formatBlock" data-value="H2">
+            <span class="material-symbols-outlined">title</span>
+            <span>Heading 2</span>
+        </div>
+        <div class="command-item" data-command="formatBlock" data-value="H3">
+            <span class="material-symbols-outlined">format_size</span>
+            <span>Heading 3</span>
+        </div>
+        <div class="command-item" data-command="insertUnorderedList" data-value="">
+            <span class="material-symbols-outlined">format_list_bulleted</span>
+            <span>Bulleted List</span>
+        </div>
+         <div class="command-item" data-command="formatBlock" data-value="P">
+            <span class="material-symbols-outlined">short_text</span>
+            <span>Paragraph</span>
+        </div>
+      </div>
+
       <input type="file" id="db-file-input" accept=".sqlite,.db" style="display: none;">
 
       <div id="note-title-editor" contenteditable="true" data-placeholder="Your Title..."></div>
@@ -296,16 +349,19 @@
     const exportDbBtn = document.getElementById('exportDbBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsMenu = document.getElementById('settings-menu');
+    const slashCommandMenu = document.getElementById('slash-command-menu');
+    const mainContent = document.getElementById('main-content');
+
 
     // --- State & DB Management ---
     let db;
     let SQL;
-    let state = { currentNoteId: null, searchResults: new Map() };
+    let state = { currentNoteId: null, searchResults: new Map(), isSlashMenuActive: false, slashCommandTriggerRange: null };
     let debounceTimer, searchDebounceTimer;
     let embedder = null; 
     
     // --- T-SNE & 3D Visualization State ---
-    let three, scene, camera, renderer, controls, pointCloud;
+    let scene, camera, renderer, controls, pointCloud;
     let tsneInstance, tsneIteration = 0, isTsneRunning = false, noteIndexMap = [];
     const TSNE_MAX_ITERATIONS = 300;
     const TSNE_VIEW_SIZE = 100;
@@ -344,7 +400,7 @@
         const data = db.export();
         await idb.set(data);
     }
-    const debouncedPersist = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(persistDb, 750); };
+    const debouncedPersist = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(persistDb, 500); };
 
     // --- Semantic Search & Embedding ---
     async function generateEmbedding(text) {
@@ -376,12 +432,12 @@
 
         const notesWithScores = allNotesRes[0].values.map(row => {
             const [id, title, embeddingBlob] = row;
+            if (!embeddingBlob) return null;
             const noteEmbedding = new Float32Array(embeddingBlob.buffer);
             const score = cosineSimilarity(queryEmbedding, noteEmbedding);
             return { id, title, score };
-        })
-        .filter(item => item.score > 0.45)
-        .sort((a, b) => b.score - a.score);
+        }).filter(item => item && item.score > 0.45)
+          .sort((a, b) => b.score - a.score);
 
         state.searchResults = new Map(notesWithScores.map(n => [n.id, n.score]));
         updatePointColors();
@@ -408,30 +464,29 @@
 
     // --- 3D Visualization Logic ---
     function initThreeJS() {
-        three = {
-            scene: new THREE.Scene(),
-            camera: new THREE.PerspectiveCamera(75, tsneContainer.clientWidth / tsneContainer.clientHeight, 0.1, 1000),
-            renderer: new THREE.WebGLRenderer({ antialias: true, alpha: true })
-        };
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, tsneContainer.clientWidth / tsneContainer.clientHeight, 0.1, 1000);
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         
-        three.renderer.setSize(tsneContainer.clientWidth, tsneContainer.clientHeight);
-        three.renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(tsneContainer.clientWidth, tsneContainer.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
         mainNetworkGraph.innerHTML = '';
-        mainNetworkGraph.appendChild(three.renderer.domElement);
+        mainNetworkGraph.appendChild(renderer.domElement);
 
-        three.camera.position.z = 120;
-        three.controls = new THREE.OrbitControls(three.camera, three.renderer.domElement);
-        three.controls.enableDamping = true;
-        three.controls.dampingFactor = 0.1;
-        three.scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+        camera.position.z = 120;
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.1;
+        scene.add(new THREE.AmbientLight(0xffffff, 1.0));
 
-        three.renderer.domElement.addEventListener('click', onCanvasClick);
+        renderer.domElement.addEventListener('click', onCanvasClick);
 
         const resizeObserver = new ResizeObserver(entries => {
+            if (!entries || !entries.length) return;
             const { width, height } = entries[0].contentRect;
-            three.camera.aspect = width / height;
-            three.camera.updateProjectionMatrix();
-            three.renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
         });
         resizeObserver.observe(tsneContainer);
         animate3D();
@@ -439,7 +494,7 @@
     
     function animate3D() {
         requestAnimationFrame(animate3D);
-        three.controls.update();
+        if(controls) controls.update();
         if (isTsneRunning && tsneIteration < TSNE_MAX_ITERATIONS) {
             tsneInstance.step();
             updatePointPositions();
@@ -447,16 +502,17 @@
         } else if (isTsneRunning) {
             isTsneRunning = false;
         }
-        three.renderer.render(three.scene, three.camera);
+        if(scene && camera) renderer.render(scene, camera);
     }
 
     async function renderTsne() {
-        if (!three) initThreeJS();
+        if (!scene) initThreeJS();
         
         const notesWithEmbeddings = (await getAllNotes(false, true)).filter(n => n.embedding);
         if (notesWithEmbeddings.length < 2) {
             mainNetworkGraph.innerHTML = 'Need at least 2 notes with content to generate a map.';
-            if (pointCloud) three.scene.remove(pointCloud);
+            if (pointCloud) scene.remove(pointCloud);
+            pointCloud = null;
             return;
         }
 
@@ -473,7 +529,7 @@
         isTsneRunning = true;
         tsneIteration = 0;
 
-        if (pointCloud) three.scene.remove(pointCloud);
+        if (pointCloud) scene.remove(pointCloud);
 
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(noteIndexMap.length * 3), 3));
@@ -481,8 +537,9 @@
         
         const material = new THREE.PointsMaterial({ size: 4, vertexColors: true, sizeAttenuation: true });
         pointCloud = new THREE.Points(geometry, material);
-        three.scene.add(pointCloud);
+        scene.add(pointCloud);
         
+        updatePointPositions();
         updatePointColors();
     }
     
@@ -536,10 +593,10 @@
         if (!pointCloud) return;
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        const rect = three.renderer.domElement.getBoundingClientRect();
+        const rect = renderer.domElement.getBoundingClientRect();
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(mouse, three.camera);
+        raycaster.setFromCamera(mouse, camera);
         raycaster.params.Points.threshold = 3;
         const intersects = raycaster.intersectObject(pointCloud);
         if (intersects.length > 0) {
@@ -555,7 +612,7 @@
         if (!db) return [];
         const query = `SELECT id, title${withContent ? ', content' : ''}${withEmbedding ? ', embedding' : ''} FROM notes ORDER BY id DESC`;
         const res = db.exec(query);
-        if (res.length === 0) return [];
+        if (res.length === 0 || !res[0].values) return [];
         const colNames = res[0].columns;
         return res[0].values.map(row => {
             const note = {};
@@ -576,10 +633,14 @@
         if (note) {
             noteTitleEditor.textContent = note.title;
             noteContentEditor.innerHTML = note.content;
-        } else {
+        } else { // Note not found, maybe deleted
+            state.currentNoteId = null;
             const allNotes = await getAllNotes();
             if (allNotes.length > 0) await selectNote(allNotes[0].id);
-            else { noteTitleEditor.innerHTML = ''; noteContentEditor.innerHTML = '<p><br></p>'; }
+            else { 
+              noteTitleEditor.innerHTML = ''; 
+              noteContentEditor.innerHTML = '<p><br></p>'; 
+            }
         }
         updatePointColors();
     }
@@ -588,8 +649,7 @@
         const newId = new Date().getTime();
         const title = 'Untitled Note';
         const content = '<p><br></p>';
-        const embeddingBlob = null;
-        db.run("INSERT INTO notes (id, title, content, embedding) VALUES (?, ?, ?, ?)", [newId, title, content, embeddingBlob]);
+        db.run("INSERT INTO notes (id, title, content) VALUES (?, ?, ?)", [newId, title, content]);
         await persistDb();
         await renderTsne();
         await selectNote(newId);
@@ -601,8 +661,8 @@
         if (confirm('Are you sure you want to delete this note?')) {
             db.run("DELETE FROM notes WHERE id = ?", [state.currentNoteId]);
             await persistDb();
-            await renderTsne();
             const notes = await getAllNotes();
+            await renderTsne();
             const nextNoteId = notes.length > 0 ? notes[0].id : null;
             if (nextNoteId) await selectNote(nextNoteId);
             else await createNewNote();
@@ -618,31 +678,142 @@
         const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
         db.run("UPDATE notes SET title = ?, content = ?, embedding = ? WHERE id = ?", [title, content, embeddingBlob, state.currentNoteId]);
         await debouncedPersist();
-        await renderTsne();
+        if (embeddingBlob) await renderTsne();
     }
 
     // --- Editor Logic ---
-    function format(command, value = null) { document.execCommand(command, false, value); noteContentEditor.focus(); hideAllMenus(); }
-    function hideAllMenus() { floatingToolbar.style.display = 'none'; }
+    function format(command, value = null) { 
+        document.execCommand(command, false, value); 
+        noteContentEditor.focus(); 
+        hideAllMenus(); 
+    }
+    function hideAllMenus() { 
+        floatingToolbar.style.display = 'none'; 
+        slashCommandMenu.classList.remove('visible');
+        state.isSlashMenuActive = false;
+        state.slashCommandTriggerRange = null;
+    }
     
     function handleSelectionChange() {
         const selection = window.getSelection();
-        const mainContent = document.getElementById('main-content');
+        if (state.isSlashMenuActive) return;
+
         if (!selection || selection.rangeCount === 0 || !noteContentEditor.contains(selection.anchorNode)) {
-            hideAllMenus(); return;
+            hideAllMenus();
+            return;
         }
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        if ((rect.width === 0 && rect.height === 0) || (selection.isCollapsed && (range.startContainer.parentNode.tagName === 'P' && range.startContainer.parentNode.textContent.trim() === ''))) {
-            hideAllMenus(); return;
+        if (selection.isCollapsed || (rect.width === 0 && rect.height === 0)) {
+            hideAllMenus();
+            return;
         }
         floatingToolbar.style.display = 'flex';
         const toolbarHeight = floatingToolbar.offsetHeight, toolbarWidth = floatingToolbar.offsetWidth;
         const margin = 8;
+        // CORRECTED: Used mainContent variable instead of main-content
         let topPosition = (rect.top > toolbarHeight + margin) ? rect.top + mainContent.scrollTop - toolbarHeight - margin : rect.bottom + mainContent.scrollTop + margin;
         const leftPosition = rect.left + (rect.width / 2) - (toolbarWidth / 2);
+        
         floatingToolbar.style.top = `${topPosition}px`;
         floatingToolbar.style.left = `${leftPosition}px`;
+    }
+
+    // --- Slash Command Logic ---
+    function handleInput(e) {
+        debouncedPersist();
+        const selection = window.getSelection();
+        if (!selection.rangeCount) return;
+
+        const range = selection.getRangeAt(0);
+        const node = range.startContainer;
+
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('/')) {
+            let parentBlock = node;
+            while(parentBlock && parentBlock.nodeName !== 'DIV' && parentBlock.nodeName !== 'P') {
+                parentBlock = parentBlock.parentNode;
+            }
+            const blockText = parentBlock ? parentBlock.textContent.trim() : '';
+
+            if(blockText.startsWith('/')) {
+                showSlashMenu(range);
+                return;
+            }
+        } else if (state.isSlashMenuActive) {
+             hideAllMenus();
+        }
+    }
+
+    function showSlashMenu(range) {
+        state.slashCommandTriggerRange = range.cloneRange();
+        const rect = range.getBoundingClientRect();
+        slashCommandMenu.style.top = `${rect.bottom + mainContent.scrollTop}px`;
+        slashCommandMenu.style.left = `${rect.left + mainContent.scrollLeft}px`;
+        slashCommandMenu.classList.add('visible');
+        state.isSlashMenuActive = true;
+        
+        const items = slashCommandMenu.querySelectorAll('.command-item');
+        items.forEach((item, index) => {
+            item.style.display = 'flex';
+            item.classList.toggle('selected', index === 0);
+        });
+    }
+
+    function handleKeyDown(e) {
+        if (!state.isSlashMenuActive) return;
+        
+        if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
+            e.preventDefault();
+        }
+
+        const items = Array.from(slashCommandMenu.querySelectorAll('.command-item')).filter(item => item.style.display !== 'none');
+        if (items.length === 0) return;
+
+        let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+
+        if (e.key === 'ArrowDown') {
+            items[currentIndex]?.classList.remove('selected');
+            const nextIndex = (currentIndex + 1) % items.length;
+            items[nextIndex]?.classList.add('selected');
+        } else if (e.key === 'ArrowUp') {
+            items[currentIndex]?.classList.remove('selected');
+            const prevIndex = (currentIndex - 1 + items.length) % items.length;
+            items[prevIndex]?.classList.add('selected');
+        } else if (e.key === 'Enter') {
+            const selectedItem = items[currentIndex];
+            if (selectedItem) executeSlashCommand(selectedItem);
+        } else if (e.key === 'Escape') {
+            hideAllMenus();
+        }
+    }
+
+    function executeSlashCommand(button) {
+        if (!button) return;
+        const { command, value } = button.dataset;
+        
+        const sel = window.getSelection();
+        const range = state.slashCommandTriggerRange;
+        if (!range) return;
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+
+        let block = range.startContainer;
+        while(block && block.nodeName !== 'DIV' && block.nodeName !== 'P'){
+            block = block.parentNode;
+        }
+
+        if(block && block.parentNode === noteContentEditor){
+            block.innerHTML = '<br>';
+            const newRange = document.createRange();
+            newRange.setStart(block, 0);
+            newRange.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+        }
+        
+        format(command, value || null);
+        hideAllMenus();
     }
 
     // --- Utilities (Import/Export) ---
@@ -652,7 +823,9 @@
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                db = new SQL.Database(new Uint8Array(e.target.result));
+                const Uints = new Uint8Array(e.target.result);
+                SQL = await initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+                db = new SQL.Database(Uints);
                 await persistDb();
                 alert('Database imported successfully! The application will now reload.');
                 window.location.reload();
@@ -667,11 +840,11 @@
 
     async function exportDatabase() {
         if (!db) { alert("Database is not ready yet."); return; }
-        if (state.currentNoteId) { await updateNoteContent(); await persistDb(); } 
+        await persistDb();
         const blob = new Blob([db.export()], { type: "application/x-sqlite3" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = `notes-backup-${new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-')}.sqlite`;
+        a.href = url; a.download = `mem0-backup-${new Date().toISOString().slice(0, 10)}.sqlite`;
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -683,24 +856,28 @@
     importDbBtn.addEventListener('click', () => { if (confirm('Importing a database will overwrite all your current notes. Are you sure?')) { dbFileInput.click(); } });
     dbFileInput.addEventListener('change', handleFileImport);
     
-    let debounceUpdateTimer;
-    const debounceUpdate = () => { clearTimeout(debounceUpdateTimer); debounceUpdateTimer = setTimeout(updateNoteContent, 500); };
-    
-    noteContentEditor.addEventListener('input', debounceUpdate);
-    noteTitleEditor.addEventListener('input', debounceUpdate);
+    noteContentEditor.addEventListener('input', handleInput);
+    noteTitleEditor.addEventListener('input', debouncedPersist);
     document.addEventListener('selectionchange', handleSelectionChange);
+    noteContentEditor.addEventListener('keydown', handleKeyDown);
+
+    slashCommandMenu.addEventListener('click', e => {
+        const button = e.target.closest('.command-item');
+        if (button) executeSlashCommand(button);
+    });
     
     floatingToolbar.addEventListener('mousedown', e => {
         e.preventDefault();
         const button = e.target.closest('button.format-btn');
         if (!button) return;
         if (button.id === 'createLinkBtn') {
-            const url = prompt('Enter URL');
+            const url = prompt('Enter URL for the link:');
             if (url) format('createLink', url);
         } else {
             format(button.dataset.command, button.dataset.value);
         }
     });
+
     searchInput.addEventListener('input', (e) => {
         clearTimeout(searchDebounceTimer);
         const query = e.target.value.trim();
@@ -720,12 +897,16 @@
     
     settingsBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        settingsMenu.classList.toggle('hidden');
+        settingsMenu.classList.toggle('visible');
     });
-    window.addEventListener('click', () => {
-        settingsMenu.classList.add('hidden');
+    window.addEventListener('click', (e) => {
+        if(!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)){
+            settingsMenu.classList.remove('visible');
+        }
+        if (!slashCommandMenu.contains(e.target) && !noteContentEditor.contains(e.target)) {
+            hideAllMenus();
+        }
     });
-    settingsMenu.addEventListener('click', e => e.stopPropagation());
     
     // --- App Initialization ---
     async function initialize() {
@@ -743,32 +924,32 @@
             const dbFile = await idb.get();
             db = dbFile ? new SQL.Database(dbFile) : new SQL.Database();
             
-            if (!dbFile) {
+            const tableInfoRes = db.exec("PRAGMA table_info(notes);");
+            if (tableInfoRes.length === 0) {
                 db.run("CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT, embedding BLOB);");
             } else {
-                const hasEmbeddingCol = db.exec("PRAGMA table_info(notes);")[0].values.some(col => col[1] === 'embedding');
+                const hasEmbeddingCol = tableInfoRes[0].values.some(col => col[1] === 'embedding');
                 if (!hasEmbeddingCol) { 
                     db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;"); 
                 }
             }
             
             mainNetworkGraph.textContent = 'Backfilling embeddings...';
-            const notesToBackfill = db.exec("SELECT id, title, content FROM notes WHERE embedding IS NULL")[0];
-            if (notesToBackfill && notesToBackfill.values.length > 0) {
-                for (const row of notesToBackfill.values) {
-                    const [id, title, content] = row;
+            const notesToBackfillRes = db.exec("SELECT id, content FROM notes WHERE embedding IS NULL");
+            if (notesToBackfillRes.length > 0 && notesToBackfillRes[0].values.length > 0) {
+                for (const row of notesToBackfillRes[0].values) {
+                    const [id, content] = row;
                     const tempDiv = document.createElement('div'); tempDiv.innerHTML = content;
                     const embeddingData = await generateEmbedding(tempDiv.innerText);
                     const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
-                    db.run("UPDATE notes SET embedding = ? WHERE id = ?", [embeddingBlob, id]);
+                    if(embeddingBlob) db.run("UPDATE notes SET embedding = ? WHERE id = ?", [embeddingBlob, id]);
                 }
                 await persistDb();
             }
             
             mainNetworkGraph.textContent = 'Initializing visualization...';
-            await renderTsne();
-            
             const notes = await getAllNotes();
+            
             if (notes.length === 0) { 
                 await createNewNote(); 
             } else {
@@ -776,9 +957,11 @@
                 const noteExists = lastNoteId && notes.some(n => n.id == lastNoteId);
                 await selectNote(noteExists ? lastNoteId : notes[0].id);
             }
+            await renderTsne();
+
         } catch(err) {
             console.error("Failed to initialize:", err);
-            mainNetworkGraph.textContent = 'Error during initialization.';
+            mainNetworkGraph.textContent = 'Error during initialization. Check console for details.';
         }
     }
     
