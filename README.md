@@ -1,8 +1,14 @@
-mem0 is a single-page HTML application for note-taking that runs entirely in the browser. It uses a client-side AI model to enable semantic search and visualizes the relationships between notes in an interactive 3D graph. All data is stored locally in the browser's IndexedDB.
+# mem0
+
+mem0 is a single-page HTML application for note-taking that runs entirely in the browser. It uses a client-side AI model to enable semantic search and visualizes the relationships between notes in an interactive 3D graph. All data is stored locally in the browser's IndexedDB.### Live Demo
+
+**You can try the application here: [https://o-kollar.github.io/mem0/](https://o-kollar.github.io/mem0/)**
+
+*Note: On first launch, the application will download the required AI model (approx. 25MB). This model is then cached by the browser for future use.*
 
 ### Core Features:
 
-*   **Local-First Storage:** All notes are stored in an SQLite database within the browser using `sql.js`, which is persisted via IndexedDB. The application can be used entirely offline.
+*   **Local-First Storage:** All notes are stored in an SQLite database within the browser using `sql.js`, which is persisted via IndexedDB. The application can be used entirely offline after the initial model download.
 *   **Rich-Text Editing:** A `contenteditable` div serves as the note editor, with a floating toolbar for basic formatting (bold, italics, headers, lists).
 *   **Semantic Search:** An embedded machine learning model generates vector embeddings from note content. This allows for searching based on meaning and context, not just keywords.
 *   **3D Note Visualization:** The application uses the t-SNE algorithm to reduce the high-dimensional embeddings into 3D coordinates. These are displayed as an interactive point cloud, clustering semantically similar notes together.
@@ -21,6 +27,4 @@ The application is self-contained in a single HTML file and relies on several ke
 
 ### How to Use
 
-To run the application, download the HTML file and open it in a modern web browser (like Chrome, Firefox, or Edge).
-
-On the first launch, the application will download the required AI model (approx. 25MB). This model is then cached by the browser for future use. The interface will guide you through creating your first note.
+Either visit the live demo link above or download the HTML file and open it locally in a modern web browser (like Chrome, Firefox, or Edge). The interface will guide you through creating your first note.
