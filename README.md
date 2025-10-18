@@ -1,30 +1,29 @@
-# mem0
+`mem0` is a self-contained HTML file that functions as a note-taking application. It operates entirely within the browser, using local storage and client-side AI models to provide its features. No data is sent to any server.
 
-mem0 is a single-page HTML application for note-taking that runs entirely in the browser. It uses a client-side AI model to enable semantic search and visualizes the relationships between notes in an interactive 3D graph. All data is stored locally in the browser's IndexedDB.### Live Demo
+#### Live Demo
 
-**You can try the application here: [https://o-kollar.github.io/mem0/](https://o-kollar.github.io/mem0/)**
+You can use the application directly at: **https://o-kollar.github.io/mem0/**
 
-*Note: On first launch, the application will download the required AI model (approx. 25MB). This model is then cached by the browser for future use.*
+#### Core Functionality
 
-### Core Features:
+*   **Local Storage:** All notes are stored in an SQLite database that runs in the browser via WebAssembly. The database file is persisted locally on your machine using IndexedDB.
+*   **Rich Text Editor:** The editor supports basic text formatting (bold, italic, links), headings, and lists. These can be applied via a floating toolbar that appears on text selection or through slash (`/`) commands.
+*   **Semantic Search:** The application generates vector embeddings from the text of your notes. This allows you to search for notes based on the contextual meaning of your query, rather than just matching keywords.
+*   **3D Visualization:** The vector embeddings of all notes are used to generate a 3D graph using the t-SNE algorithm. In this graph, notes with similar semantic content are positioned closer to each other, providing a visual way to explore relationships in your knowledge base.
+*   **Data Portability:** The entire SQLite database can be exported as a standard `.sqlite` file at any time. You can also import a compatible `.sqlite` file, which will overwrite the current database.
 
-*   **Local-First Storage:** All notes are stored in an SQLite database within the browser using `sql.js`, which is persisted via IndexedDB. The application can be used entirely offline after the initial model download.
-*   **Rich-Text Editing:** A `contenteditable` div serves as the note editor, with a floating toolbar for basic formatting (bold, italics, headers, lists).
-*   **Semantic Search:** An embedded machine learning model generates vector embeddings from note content. This allows for searching based on meaning and context, not just keywords.
-*   **3D Note Visualization:** The application uses the t-SNE algorithm to reduce the high-dimensional embeddings into 3D coordinates. These are displayed as an interactive point cloud, clustering semantically similar notes together.
-*   **Data Portability:** The entire note database can be exported as a single `.sqlite` file and imported back into the application.
+#### Technical Stack
 
-### Technical Implementation
+*   **Database:** `sql.js` (SQLite compiled to WebAssembly) for all database operations.
+*   **AI Models:** `@xenova/transformers` for running sentence-transformer models (e.g., `Xenova/all-MiniLM-L6-v2`) client-side to generate text embeddings.
+*   **3D Rendering:** `three.js` is used to render and manage the interactive 3D note graph.
+*   **Dimensionality Reduction:** `tsne.js` is used to translate the high-dimensional vectors from the AI model into 3D coordinates for visualization.
+*   **Persistence:** The browser's IndexedDB API is used as the storage mechanism for the SQLite database file between sessions.
 
-The application is self-contained in a single HTML file and relies on several key JavaScript libraries to function:
+#### Local Usage
 
-1.  **Database:** `sql.js` provides an in-browser SQLite engine. This handles all creation, reading, updating, and deletion of notes. The database state is saved to IndexedDB to persist data between sessions.
-2.  **Machine Learning Model:** The `Xenova/all-MiniLM-L6-v2` model is loaded via the `Transformers.js` library. It runs entirely on the client-side to convert the text of each note into a numerical vector (embedding). This process occurs when a note is saved and is used for both search and visualization.
-3.  **Search Mechanism:** When a user types a search query, the model generates an embedding for the query text. A cosine similarity calculation is then performed between the query embedding and the stored embeddings of all notes to rank them by relevance.
-4.  **3D Visualization:**
-    *   **Dimensionality Reduction:** The `tsne.js` library takes the high-dimensional text embeddings and calculates a 3D representation for each note.
-    *   **Rendering:** `three.js` is used to render the resulting 3D coordinates as an interactive point cloud, where users can pan, zoom, and click on nodes to navigate to the corresponding note.
+Alternatively, you can run the application locally:
+1.  Download the `index.html` file.
+2.  Open it in a modern web browser (Chrome, Firefox, Edge, etc.).
 
-### How to Use
-
-Either visit the live demo link above or download the HTML file and open it locally in a modern web browser (like Chrome, Firefox, or Edge). The interface will guide you through creating your first note.
+On the first launch (either from the link or a local file), the application will download the necessary JavaScript libraries and the selected AI model. After that, it can be used offline.
