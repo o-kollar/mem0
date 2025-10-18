@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF--8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mem0</title>
   <!-- Google Material Symbols -->
@@ -11,6 +11,7 @@
       --bg-color: #F8F9FA;
       --editor-bg: #FFFFFF;
       --text-color: #1c1c1c;
+      --secondary-text-color: #666;
       --border-color: #EAE2D1;
       --primary-color: #4A90E2;
       --highlight-color: #FFECB3;
@@ -18,38 +19,61 @@
       --toolbar-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
       --font-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       --font-serif: "Georgia", "Times New Roman", serif;
+      --graph-bg: #f5f5f5;
+      --hover-bg: #F1F3F4;
+    }
+    [data-theme="dark"] {
+      --bg-color: #1c1c1c;
+      --editor-bg: #262626;
+      --text-color: #F8F9FA;
+      --secondary-text-color: #aaa;
+      --border-color: #444;
+      --primary-color: #4A90E2;
+      --graph-bg: #333;
+      --hover-bg: #3a3a3a;
     }
     body {
       font-family: var(--font-sans-serif);
       margin: 0;
       background-color: var(--bg-color);
       color: var(--text-color);
-      display: flex;
-      justify-content: center;
-      height: 100vh;
-      overflow: hidden;
+      transition: background-color 0.3s, color 0.3s;
     }
-    #app-container { width: 100%; height: 100%; }
+    #app-container { width: 100%; }
     #main-content {
-      flex-grow: 1;
       padding: 40px;
-      overflow-y: auto;
       display: flex;
       justify-content: center;
       position: relative;
     }
     .container { width: 100%; max-width: 720px; position: relative; }
-    
+
+    #header-sticky-wrapper {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background-color: var(--bg-color);
+        padding-top: 20px;
+        padding-bottom: 10px;
+        margin-top: -20px;
+        transition: background-color 0.3s;
+    }
+
     #top-network-container {
       position: relative;
-      height: 250px;
+      height: 100px; /* Collapsed height */
       margin-bottom: 0;
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      background-color: #f5f5f5;
+      border-radius: 25px; /* Updated border-radius */
+      background-color: var(--graph-bg);
       box-sizing: border-box;
       padding: 0;
       overflow: hidden;
+      transition: height 0.4s ease-in-out, background-color 0.3s, border-color 0.3s;
+    }
+    #top-network-container.expanded {
+        height: 250px; /* Expanded height */
     }
     #main-network-graph {
       width: 100%;
@@ -57,35 +81,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #888;
+      color: var(--secondary-text-color);
     }
     #main-network-graph canvas { display: block; width: 100%; height: 100%; }
-    
-    #search-results-container {
-        display: none;
-        max-height: 150px;
-        overflow-y: auto;
-        background-color: #fff;
-        border: 1px solid var(--border-color);
-        border-top: none;
-        border-bottom-left-radius: 8px;
-        border-bottom-right-radius: 8px;
-        margin-bottom: 1em;
-        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    }
-    .search-result-item {
-        padding: 10px 15px;
-        cursor: pointer;
-        border-bottom: 1px solid #f0f0f0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .search-result-item:last-child { border-bottom: none; }
-    .search-result-item:hover { background-color: #f7f7f7; }
-    .search-result-item .title { font-weight: 500; }
-    .search-result-item .score { font-size: 0.8em; color: #777; background-color: #eee; padding: 2px 6px; border-radius: 4px; }
-    
+
     #search-container {
         position: absolute;
         top: 20px; left: 50%;
@@ -112,7 +111,7 @@
         padding: 8px; margin-right: 8px; color: #555;
         line-height: 0;
     }
-    
+
     .material-symbols-outlined {
       font-size: 20px;
       vertical-align: middle;
@@ -123,7 +122,7 @@
     }
 
     #main-actions {
-      position: relative; /* For positioning the settings menu */
+      position: relative;
       display: flex;
       justify-content: flex-end;
       gap: 10px;
@@ -132,14 +131,16 @@
     }
     #main-actions button {
       padding: 8px; border-radius: 6px; cursor: pointer;
-      border: 1px solid #DADCE0; background-color: #FFF;
+      border: 1px solid var(--border-color);
+      background-color: var(--editor-bg);
+      color: var(--text-color);
       font-weight: 500; font-size: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 0;
     }
-    #main-actions button:hover { background-color: #F1F3F4; }
+    #main-actions button:hover { background-color: var(--hover-bg); }
     #deleteNoteBtn { color: #D93025; }
     #deleteNoteBtn:hover { background-color: #FCE8E6 !important; }
 
@@ -156,45 +157,101 @@
         display: none;
         flex-direction: column;
         gap: 4px;
-        min-width: 200px;
+        min-width: 250px;
     }
-    #settings-menu.visible {
-        display: flex;
+    #settings-menu.visible { display: flex; }
+    #settings-menu button, .settings-item {
+        border: none; background-color: transparent; text-align: left;
+        padding: 8px 12px; width: 100%; display: flex;
+        align-items: center; gap: 12px; font-weight: 500;
+        font-size: 14px; cursor: pointer; color: var(--text-color);
     }
-    #settings-menu button {
-        border: none;
-        background-color: transparent;
-        text-align: left;
-        padding: 8px 12px;
+    #settings-menu button:hover { background-color: var(--hover-bg); }
+    .settings-separator { height: 1px; background-color: var(--border-color); margin: 4px 0; }
+    .settings-item { cursor: default; }
+    .settings-item label { display: flex; align-items: center; gap: 12px; flex-shrink: 0;}
+    .settings-item select {
         width: 100%;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 4px 6px;
+        font-size: 13px;
+    }
+
+    #notes-container {
         display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 500;
-        font-size: 14px;
-        cursor: pointer;
+        flex-direction: column;
+        min-height: 50vh;
     }
-     #settings-menu button:hover {
-        background-color: #F1F3F4;
-     }
+    .note-card {
+        background-color: var(--editor-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin-bottom: 1em;
+        transition: all 0.3s ease-in-out;
+        position: relative;
+    }
+    .note-faded { opacity: 0.4; }
     
-    #note-title-editor {
-        font-family: var(--font-serif); font-weight: 700; line-height: 1.3;
-        font-size: 2.2em; margin-bottom: 1em; outline: none;
-        padding: 0 48px; border: 1px solid transparent;
+    .note-card summary {
+        font-family: var(--font-serif);
+        font-weight: 700;
+        font-size: 1.5em;
+        padding: 16px 24px;
+        outline: none;
+        list-style: none;
+        cursor: text;
     }
-    #note-content-editor {
-      background-color: var(--editor-bg); padding: 32px 48px; min-height: 50vh;
-      font-size: 17px; line-height: 1.7; outline: none; border-radius: 8px;
-      border: 1px solid var(--border-color); caret-color: var(--primary-color);
+    .note-card summary::-webkit-details-marker { display: none; }
+
+    .note-body-wrapper {
+        border-top: 1px solid var(--border-color);
+        transition: box-shadow 0.3s;
     }
-    #note-content-editor:focus { border-color: var(--primary-color); }
-    [data-placeholder]:empty:before { content: attr(data-placeholder); color: #aaa; pointer-events: none; display: block; }
-    #note-content-editor h2, #note-content-editor h3 { font-family: var(--font-serif); font-weight: 700; line-height: 1.3; }
-    #note-content-editor h2 { font-size: 1.6em; margin-bottom: 0.5em;}
-    #note-content-editor h3 { font-size: 1.3em; margin-bottom: 0.5em;}
+    .note-body-wrapper:first-child {
+        border-top: none;
+    }
+    .note-card > .note-body-wrapper { /* Standalone note */
+         border-top: none;
+    }
+
+    .note-selected {
+        box-shadow: 0 0 0 2px var(--primary-color) inset;
+    }
+    .note-card.note-selected {
+        border-color: var(--primary-color);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
     
-    #floating-toolbar { position: absolute; z-index: 100; display: none; padding: 5px; display: flex; gap: 4px; align-items: center; }
+    .note-meta {
+        padding: 0 24px 12px;
+        font-size: 0.8em;
+        color: var(--secondary-text-color);
+        border-bottom: 1px solid var(--border-color);
+        margin: 12px 24px 12px;
+        transition: color 0.3s, border-color 0.3s;
+    }
+     .grouped-note-card .note-body-wrapper:first-of-type .note-meta {
+        margin-top: -8px;
+    }
+    
+    .note-content-editor {
+      padding: 12px 24px 24px;
+      font-size: 17px;
+      line-height: 1.7;
+      outline: none;
+      caret-color: var(--primary-color);
+    }
+    [data-placeholder]:empty:before {
+        content: attr(data-placeholder);
+        color: var(--secondary-text-color);
+        pointer-events: none;
+        display: block;
+    }
+
+    #floating-toolbar { position: fixed; z-index: 100; display: none; padding: 5px; display: flex; gap: 4px; align-items: center; }
     .liquid-glass {
       position: relative; border-radius: 100vmax; isolation: isolate;
       background-color: rgba(255, 255, 255, 0.25);
@@ -207,8 +264,9 @@
     #floating-toolbar button { background: none; border: none; color: var(--toolbar-bg); cursor: pointer; padding: 8px; border-radius: 50%; width: 38px; height: 38px; display: grid; place-items: center; position: relative; z-index: 1; }
     #floating-toolbar button:hover { background-color: rgba(0, 0, 0, 0.1); }
     .toolbar-separator { width: 1px; height: 20px; background-color: rgba(0, 0, 0, 0.2); margin: 0 4px; }
-    
-    #slash-command-menu {
+
+    /* --- Pop-up Menus --- */
+    .popup-menu {
         position: absolute;
         z-index: 200;
         background-color: var(--editor-bg);
@@ -220,66 +278,83 @@
         flex-direction: column;
         gap: 4px;
         min-width: 220px;
+        max-height: 300px;
+        overflow-y: auto;
     }
-    #slash-command-menu.visible {
-        display: flex;
+    .popup-menu.visible { display: flex; }
+    .popup-menu-item {
+        border: none; background-color: transparent; text-align: left;
+        padding: 8px 12px; width: 100%; display: flex; align-items: center;
+        gap: 12px; font-weight: 500; font-size: 14px;
+        cursor: pointer; border-radius: 4px; color: var(--text-color);
     }
-    .command-item {
-        border: none;
-        background-color: transparent;
-        text-align: left;
-        padding: 8px 12px;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-weight: 500;
-        font-size: 14px;
-        cursor: pointer;
-        border-radius: 4px;
+    .popup-menu-item:hover, .popup-menu-item.selected { background-color: var(--hover-bg); }
+    .popup-menu-item .item-meta {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--secondary-text-color);
     }
-    .command-item:hover, .command-item.selected {
-        background-color: #F1F3F4;
-    }
-    
+
     @media (max-width: 768px) {
       #main-content { padding: 20px 15px; }
-      #top-network-container { height: 220px; }
+      #header-sticky-wrapper {
+          padding-top: 15px;
+          margin-top: -15px;
+      }
+      #top-network-container {
+        height: 90px;
+      }
+      #top-network-container.expanded {
+        height: 220px;
+      }
       #search-container { width: 95%; top: 15px; }
       #search-input { font-size: 14px; padding: 8px 15px; }
-      #note-title-editor { padding: 0 10px; font-size: 1.8em; }
-      #note-content-editor { padding: 16px; }
+      .note-card summary { font-size: 1.2em; padding: 12px 16px; }
+      .note-meta { padding: 0 16px 8px; margin: -4px 16px 8px; }
+      .note-content-editor { padding: 8px 16px 16px; }
     }
   </style>
 </head>
-<body>
+<body id="app-body">
 
 <svg style="display: none;"><filter id="glass-distortion"><feTurbulence type="fractalNoise" baseFrequency="0.05 0.05" numOctaves="3" result="noise" /><feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" /></filter></svg>
 
 <div id="app-container">
   <main id="main-content">
     <div class="container">
-      <div id="top-network-container">
-        <div id="search-container">
-            <input type="search" id="search-input" placeholder="Search & filter notes..." disabled>
-            <button id="clear-search-btn" title="Clear search">
-                <span class="material-symbols-outlined">close</span>
-            </button>
+      <div id="header-sticky-wrapper">
+        <div id="top-network-container">
+          <div id="search-container">
+              <input type="search" id="search-input" placeholder="Search & filter notes..." disabled>
+              <button id="clear-search-btn" title="Clear search">
+                  <span class="material-symbols-outlined">close</span>
+              </button>
+          </div>
+          <div id="main-network-graph"></div>
         </div>
-        <div id="main-network-graph"></div>
-      </div>
-      
-      <div id="search-results-container"></div>
-      
-      <div id="main-actions">
-        <button id="newNoteBtn" title="New Note"><span class="material-symbols-outlined">add_circle</span></button>
-        <button id="deleteNoteBtn" title="Delete Note"><span class="material-symbols-outlined">delete</span></button>
-        <button id="settingsBtn" title="Settings">
-            <span class="material-symbols-outlined">settings</span>
-        </button>
-        <div id="settings-menu" class="hidden">
-            <button id="importDbBtn"><span class="material-symbols-outlined">upload_file</span>Import mem0</button>
-            <button id="exportDbBtn"><span class="material-symbols-outlined">download_for_offline</span>Export mem0</button>
+
+        <div id="main-actions">
+          <button id="newNoteBtn" title="New Note"><span class="material-symbols-outlined">add_circle</span></button>
+          <button id="deleteNoteBtn" title="Delete Note"><span class="material-symbols-outlined">delete</span></button>
+          <button id="settingsBtn" title="Settings">
+              <span class="material-symbols-outlined">settings</span>
+          </button>
+          <div id="settings-menu" class="hidden">
+               <div class="settings-item">
+                  <label for="theme-select"><span class="material-symbols-outlined">contrast</span>Theme</label>
+                  <select id="theme-select">
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                  </select>
+              </div>
+              <div class="settings-item">
+                  <label for="model-select"><span class="material-symbols-outlined">memory</span>AI Model</label>
+                  <select id="model-select"></select>
+              </div>
+              <div class="settings-separator"></div>
+              <button id="importDbBtn"><span class="material-symbols-outlined">upload_file</span>Import mem0</button>
+              <button id="exportDbBtn"><span class="material-symbols-outlined">download_for_offline</span>Export mem0</button>
+          </div>
         </div>
       </div>
 
@@ -293,30 +368,31 @@
         <button class="format-btn" data-command="insertUnorderedList" title="Bulleted List"><span class="material-symbols-outlined">format_list_bulleted</span></button>
         <button class="format-btn" data-command="formatBlock" data-value="P" title="Paragraph"><span class="material-symbols-outlined">short_text</span></button>
       </div>
-      
-      <div id="slash-command-menu">
-        <div class="command-item" data-command="formatBlock" data-value="H2">
+
+      <div id="slash-command-menu" class="popup-menu">
+        <div class="popup-menu-item" data-command="formatBlock" data-value="H2">
             <span class="material-symbols-outlined">title</span>
             <span>Heading 2</span>
         </div>
-        <div class="command-item" data-command="formatBlock" data-value="H3">
+        <div class="popup-menu-item" data-command="formatBlock" data-value="H3">
             <span class="material-symbols-outlined">format_size</span>
             <span>Heading 3</span>
         </div>
-        <div class="command-item" data-command="insertUnorderedList" data-value="">
+        <div class="popup-menu-item" data-command="insertUnorderedList" data-value="">
             <span class="material-symbols-outlined">format_list_bulleted</span>
             <span>Bulleted List</span>
         </div>
-         <div class="command-item" data-command="formatBlock" data-value="P">
+         <div class="popup-menu-item" data-command="formatBlock" data-value="P">
             <span class="material-symbols-outlined">short_text</span>
             <span>Paragraph</span>
         </div>
       </div>
+      
+      <div id="title-autosuggest-menu" class="popup-menu"></div>
 
       <input type="file" id="db-file-input" accept=".sqlite,.db" style="display: none;">
 
-      <div id="note-title-editor" contenteditable="true" data-placeholder="Your Title..."></div>
-      <div id="note-content-editor" contenteditable="true" data-placeholder="Start writing here..."></div>
+      <div id="notes-container"></div>
 
     </div>
   </main>
@@ -332,10 +408,9 @@
 <!-- App Logic -->
 <script type="module">
     import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
-    
+
     // --- DOM Elements ---
-    const noteTitleEditor = document.getElementById('note-title-editor');
-    const noteContentEditor = document.getElementById('note-content-editor');
+    const notesContainer = document.getElementById('notes-container');
     const newNoteBtn = document.getElementById('newNoteBtn');
     const deleteNoteBtn = document.getElementById('deleteNoteBtn');
     const floatingToolbar = document.getElementById('floating-toolbar');
@@ -343,32 +418,50 @@
     const mainNetworkGraph = document.getElementById('main-network-graph');
     const searchInput = document.getElementById('search-input');
     const clearSearchBtn = document.getElementById('clear-search-btn');
-    const searchResultsContainer = document.getElementById('search-results-container');
     const importDbBtn = document.getElementById('importDbBtn');
     const dbFileInput = document.getElementById('db-file-input');
     const exportDbBtn = document.getElementById('exportDbBtn');
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsMenu = document.getElementById('settings-menu');
     const slashCommandMenu = document.getElementById('slash-command-menu');
-    const mainContent = document.getElementById('main-content');
+    const titleAutosuggestMenu = document.getElementById('title-autosuggest-menu');
 
+    // --- Config & Constants ---
+    const AVAILABLE_MODELS = {
+        'Xenova/all-MiniLM-L6-v2': 'MiniLM-L6 (Fast, Default)',
+        'Xenova/gte-small': 'GTE-Small (Balanced)',
+        'Xenova/msmarco-distilbert-base-tas-b': 'DistilBERT-TAS-B (Search)',
+        'Xenova/paraphrase-albert-small-v2': 'Albert-Small (Compact)'
+    };
+    const DEFAULT_MODEL = 'Xenova/all-MiniLM-L6-v2';
+    const MODEL_STORAGE_KEY = 'inspired-notes-model';
+    const THEME_STORAGE_KEY = 'inspired-notes-theme';
+    const MAX_EMBEDDING_WORDS = 250; 
 
     // --- State & DB Management ---
     let db;
     let SQL;
-    let state = { currentNoteId: null, searchResults: new Map(), isSlashMenuActive: false, slashCommandTriggerRange: null };
-    let debounceTimer, searchDebounceTimer;
-    let embedder = null; 
-    
+    let allNotesCache = [];
+    let state = {
+        currentNoteId: null,
+        searchResults: new Map(),
+        searchScoreRange: null,
+        activeMenu: null, // 'slash', 'title', null
+        slashCommandTriggerRange: null,
+        settings: { model: DEFAULT_MODEL, theme: 'light' }
+    };
+    let debounceTimer, searchDebounceTimer, titleDebounceTimer;
+    let embedder = null;
+
     // --- T-SNE & 3D Visualization State ---
     let scene, camera, renderer, controls, pointCloud;
     let tsneInstance, tsneIteration = 0, isTsneRunning = false, noteIndexMap = [];
     const TSNE_MAX_ITERATIONS = 300;
     const TSNE_VIEW_SIZE = 100;
-    const defaultColor = new THREE.Color('#000000');
     const selectedColor = new THREE.Color('#FFFF00');
     const searchMatchColor = new THREE.Color('#FF9800');
-    const fadedColor = new THREE.Color('#222222');
+    let defaultColor = new THREE.Color('#000000');
+    let fadedColor = new THREE.Color('#bbbbbb');
 
     const DB_NAME = 'InspiredNotesDB';
     const DB_STORE_NAME = 'databaseFile';
@@ -402,6 +495,36 @@
     }
     const debouncedPersist = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(persistDb, 500); };
 
+    // --- Settings & Theme ---
+    function loadSettings() {
+        state.settings.theme = localStorage.getItem(THEME_STORAGE_KEY) || 'light';
+        state.settings.model = localStorage.getItem(MODEL_STORAGE_KEY) || DEFAULT_MODEL;
+    }
+    function applyTheme() {
+        document.body.dataset.theme = state.settings.theme;
+        if (state.settings.theme === 'dark') {
+            defaultColor.set('#FFFFFF');
+            fadedColor.set('#555555');
+        } else {
+            defaultColor.set('#000000');
+            fadedColor.set('#bbbbbb');
+        }
+        if (pointCloud) updatePointColors();
+    }
+    function populateSettingsUI() {
+        const themeSelect = document.getElementById('theme-select');
+        themeSelect.value = state.settings.theme;
+        const modelSelect = document.getElementById('model-select');
+        modelSelect.innerHTML = '';
+        for (const [id, name] of Object.entries(AVAILABLE_MODELS)) {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = name;
+            modelSelect.appendChild(option);
+        }
+        modelSelect.value = state.settings.model;
+    }
+
     // --- Semantic Search & Embedding ---
     async function generateEmbedding(text) {
         if (!embedder || !text) return null;
@@ -415,51 +538,55 @@
         for (let i = 0; i < vecA.length; i++) { dotProduct += vecA[i] * vecB[i]; }
         return dotProduct;
     }
-    
     async function performSearch(query) {
+        const allNoteElements = document.querySelectorAll('.note-card');
         if (!query) {
             state.searchResults.clear();
+            state.searchScoreRange = null;
             updatePointColors();
-            renderSearchResultsList([]);
+            allNoteElements.forEach(el => {
+                el.style.order = '';
+                el.classList.remove('note-faded');
+            });
             return;
         }
-        
         const queryEmbedding = await generateEmbedding(query);
         if (!queryEmbedding) return;
-
-        const allNotesRes = db.exec("SELECT id, title, embedding FROM notes WHERE embedding IS NOT NULL");
-        if (allNotesRes.length === 0) return;
-
-        const notesWithScores = allNotesRes[0].values.map(row => {
-            const [id, title, embeddingBlob] = row;
-            if (!embeddingBlob) return null;
-            const noteEmbedding = new Float32Array(embeddingBlob.buffer);
+        const notesWithScores = allNotesCache.filter(note => note.embedding).map(note => {
+            const noteEmbedding = new Float32Array(note.embedding.buffer);
             const score = cosineSimilarity(queryEmbedding, noteEmbedding);
-            return { id, title, score };
+            return { id: note.id, title: note.title, score };
         }).filter(item => item && item.score > 0.45)
           .sort((a, b) => b.score - a.score);
 
+        if (notesWithScores.length > 0) {
+            state.searchScoreRange = {
+                max: notesWithScores[0].score,
+                min: notesWithScores[notesWithScores.length - 1].score
+            };
+        } else {
+            state.searchScoreRange = null;
+        }
+
         state.searchResults = new Map(notesWithScores.map(n => [n.id, n.score]));
         updatePointColors();
-        renderSearchResultsList(notesWithScores);
-    }
-    
-    function renderSearchResultsList(results) {
-        if (results.length === 0) {
-            searchResultsContainer.style.display = 'none';
-            searchResultsContainer.innerHTML = '';
-            return;
-        }
-        
-        const html = results.map(note => `
-            <div class="search-result-item" data-note-id="${note.id}">
-                <span class="title">${note.title || 'Untitled Note'}</span>
-                <span class="score">${note.score.toFixed(2)}</span>
-            </div>
-        `).join('');
-        
-        searchResultsContainer.innerHTML = html;
-        searchResultsContainer.style.display = 'block';
+        const rankMap = new Map(notesWithScores.map((note, index) => [note.id.toString(), index]));
+        const nonMatchOrder = notesWithScores.length;
+        // This part needs adjustment for grouped cards
+        // For simplicity, we fade the whole card if none of its notes are in the search results
+        allNoteElements.forEach(el => {
+            const noteIds = Array.from(el.querySelectorAll('[data-note-id]')).map(n => n.dataset.noteId);
+            const isInResults = noteIds.some(id => rankMap.has(id));
+            if(isInResults) {
+                // Find the best score within the card to order it
+                const bestRank = Math.min(...noteIds.filter(id => rankMap.has(id)).map(id => rankMap.get(id)));
+                el.style.order = bestRank;
+                el.classList.remove('note-faded');
+            } else {
+                el.style.order = nonMatchOrder;
+                el.classList.add('note-faded');
+            }
+        });
     }
 
     // --- 3D Visualization Logic ---
@@ -467,20 +594,16 @@
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(75, tsneContainer.clientWidth / tsneContainer.clientHeight, 0.1, 1000);
         renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        
         renderer.setSize(tsneContainer.clientWidth, tsneContainer.clientHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         mainNetworkGraph.innerHTML = '';
         mainNetworkGraph.appendChild(renderer.domElement);
-
         camera.position.z = 120;
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
         scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-
         renderer.domElement.addEventListener('click', onCanvasClick);
-
         const resizeObserver = new ResizeObserver(entries => {
             if (!entries || !entries.length) return;
             const { width, height } = entries[0].contentRect;
@@ -491,7 +614,6 @@
         resizeObserver.observe(tsneContainer);
         animate3D();
     }
-    
     function animate3D() {
         requestAnimationFrame(animate3D);
         if(controls) controls.update();
@@ -504,45 +626,35 @@
         }
         if(scene && camera) renderer.render(scene, camera);
     }
-
     async function renderTsne() {
         if (!scene) initThreeJS();
-        
-        const notesWithEmbeddings = (await getAllNotes(false, true)).filter(n => n.embedding);
+        const notesWithEmbeddings = allNotesCache.filter(n => n.embedding);
         if (notesWithEmbeddings.length < 2) {
             mainNetworkGraph.innerHTML = 'Need at least 2 notes with content to generate a map.';
             if (pointCloud) scene.remove(pointCloud);
             pointCloud = null;
             return;
         }
-
         noteIndexMap = notesWithEmbeddings.map(n => n.id);
         const embeddingVectors = notesWithEmbeddings.map(n => Array.from(new Float32Array(n.embedding.buffer)));
-
         tsneInstance = new tsnejs.tSNE({
             epsilon: 10,
             perplexity: Math.min(30, Math.floor((notesWithEmbeddings.length -1) / 3)),
             dim: 3
         });
-
         tsneInstance.initDataRaw(embeddingVectors);
         isTsneRunning = true;
         tsneIteration = 0;
-
         if (pointCloud) scene.remove(pointCloud);
-
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(noteIndexMap.length * 3), 3));
         geometry.setAttribute('color', new THREE.BufferAttribute(new Float32Array(noteIndexMap.length * 3), 3));
-        
         const material = new THREE.PointsMaterial({ size: 4, vertexColors: true, sizeAttenuation: true });
         pointCloud = new THREE.Points(geometry, material);
         scene.add(pointCloud);
-        
         updatePointPositions();
         updatePointColors();
     }
-    
     function updatePointPositions() {
         if (!pointCloud || !tsneInstance) return;
         const solution = tsneInstance.getSolution();
@@ -565,20 +677,22 @@
         }
         positions.needsUpdate = true;
     }
-    
     function updatePointColors() {
         if (!pointCloud) return;
         const colors = pointCloud.geometry.getAttribute('color');
         const color = new THREE.Color();
         const isSearchActive = state.searchResults.size > 0;
-        
         for (let i = 0; i < noteIndexMap.length; i++) {
             const noteId = noteIndexMap[i];
-            
             if (noteId === state.currentNoteId) {
                 color.set(selectedColor);
             } else if (state.searchResults.has(noteId)) {
-                color.set(searchMatchColor);
+                const score = state.searchResults.get(noteId);
+                const range = state.searchScoreRange.max - state.searchScoreRange.min;
+                const t = range > 0.001 ? (score - state.searchScoreRange.min) / range : 1.0;
+                const lowScoreColor = defaultColor.clone();
+                const highScoreColor = searchMatchColor.clone();
+                color.copy(lowScoreColor).lerp(highScoreColor, t);
             } else if (isSearchActive) {
                 color.set(fadedColor);
             } else {
@@ -588,7 +702,6 @@
         }
         colors.needsUpdate = true;
     }
-    
     function onCanvasClick(event) {
         if (!pointCloud) return;
         const raycaster = new THREE.Raycaster();
@@ -603,207 +716,306 @@
             const clickedNoteId = noteIndexMap[intersects[0].index];
             if (clickedNoteId) {
                 selectNote(clickedNoteId);
+                const noteElement = document.querySelector(`[data-note-id="${clickedNoteId}"]`);
+                if(noteElement) noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
     }
-    
-    // --- Note Management (SQL) ---
-    async function getAllNotes(withContent = false, withEmbedding = false) {
-        if (!db) return [];
-        const query = `SELECT id, title${withContent ? ', content' : ''}${withEmbedding ? ', embedding' : ''} FROM notes ORDER BY id DESC`;
+
+    // --- Note Management (SQL & Cache) ---
+    async function refreshNoteCache() {
+        if (!db) { allNotesCache = []; return; }
+        const query = `SELECT id, title, content, created_at, embedding FROM notes ORDER BY created_at DESC`;
         const res = db.exec(query);
-        if (res.length === 0 || !res[0].values) return [];
+        if (res.length === 0 || !res[0].values) { allNotesCache = []; return; }
         const colNames = res[0].columns;
-        return res[0].values.map(row => {
+        allNotesCache = res[0].values.map(row => {
             const note = {};
             colNames.forEach((col, i) => note[col] = row[i]);
             return note;
         });
     }
 
+    function renderNoteBody(note) {
+        const formattedDate = new Date(note.created_at || note.id).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        return `
+            <div class="note-body-wrapper" data-note-id="${note.id}">
+                <div class="note-meta">
+                    <span>${formattedDate}</span>
+                </div>
+                <div class="note-content-editor" contenteditable="true" data-placeholder="Start writing here...">${note.content || ''}</div>
+            </div>
+        `;
+    }
+
+    async function renderAllNotes() {
+        const notesByTitle = allNotesCache.reduce((acc, note) => {
+            const title = note.title || 'Untitled Note';
+            if (!acc[title]) acc[title] = [];
+            acc[title].push(note);
+            return acc;
+        }, {});
+
+        notesContainer.innerHTML = Object.values(notesByTitle).map(notes => {
+            if (notes.length === 1) {
+                const note = notes[0];
+                return `
+                    <details class="note-card" open>
+                        <summary contenteditable="true" data-note-id-ref="${note.id}">${note.title || 'Untitled Note'}</summary>
+                        ${renderNoteBody(note)}
+                    </details>
+                `;
+            } else {
+                return `
+                    <details class="note-card grouped-note-card" open>
+                        <summary contenteditable="false">${notes[0].title || 'Untitled Note'}</summary>
+                        ${notes.map(renderNoteBody).join('')}
+                    </details>
+                `;
+            }
+        }).join('');
+    }
+
     async function selectNote(id) {
         clearSearchBtn.click();
-        state.currentNoteId = parseInt(id, 10);
+        const noteId = parseInt(id, 10);
+        state.currentNoteId = noteId;
         localStorage.setItem('inspired-notes-app-last-note', id);
-        const stmt = db.prepare("SELECT title, content FROM notes WHERE id = :id");
-        stmt.bind({ ':id': id });
-        let note = null;
-        if (stmt.step()) note = stmt.getAsObject();
-        stmt.free();
-        if (note) {
-            noteTitleEditor.textContent = note.title;
-            noteContentEditor.innerHTML = note.content;
-        } else { // Note not found, maybe deleted
-            state.currentNoteId = null;
-            const allNotes = await getAllNotes();
-            if (allNotes.length > 0) await selectNote(allNotes[0].id);
-            else { 
-              noteTitleEditor.innerHTML = ''; 
-              noteContentEditor.innerHTML = '<p><br></p>'; 
-            }
+        
+        document.querySelectorAll('.note-selected').forEach(el => el.classList.remove('note-selected'));
+        
+        const selectedNoteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (selectedNoteElement) {
+            selectedNoteElement.classList.add('note-selected');
+            const parentCard = selectedNoteElement.closest('.note-card');
+            if(parentCard) parentCard.classList.add('note-selected');
         }
+        
         updatePointColors();
     }
-    
     async function createNewNote() {
         const newId = new Date().getTime();
         const title = 'Untitled Note';
         const content = '<p><br></p>';
-        db.run("INSERT INTO notes (id, title, content) VALUES (?, ?, ?)", [newId, title, content]);
+        db.run("INSERT INTO notes (id, title, content, created_at) VALUES (?, ?, ?, ?)", [newId, title, content, newId]);
         await persistDb();
+        await refreshNoteCache();
+        await renderAllNotes();
         await renderTsne();
         await selectNote(newId);
-        noteContentEditor.focus();
+        const newNoteElement = document.querySelector(`summary[data-note-id-ref="${newId}"]`);
+        if (newNoteElement) {
+             newNoteElement.focus();
+             document.execCommand('selectAll', false, null);
+        }
     }
-
     async function deleteCurrentNote() {
         if (!state.currentNoteId) return;
         if (confirm('Are you sure you want to delete this note?')) {
             db.run("DELETE FROM notes WHERE id = ?", [state.currentNoteId]);
             await persistDb();
-            const notes = await getAllNotes();
+            await refreshNoteCache();
+            await renderAllNotes();
             await renderTsne();
-            const nextNoteId = notes.length > 0 ? notes[0].id : null;
-            if (nextNoteId) await selectNote(nextNoteId);
-            else await createNewNote();
+            const nextNoteId = allNotesCache.length > 0 ? allNotesCache[0].id : null;
+            if (nextNoteId) {
+                await selectNote(nextNoteId);
+            } else {
+                // No notes left, maybe clear the view or create a new one
+                notesContainer.innerHTML = '';
+            }
         }
     }
-    
-    async function updateNoteContent() {
-        if (!state.currentNoteId || !db) return;
-        const title = noteTitleEditor.textContent.trim() || 'Untitled Note';
-        const content = noteContentEditor.innerHTML;
-        const textToEmbed = noteContentEditor.innerText;
+    async function updateNoteContent(noteId, newTitle = null) {
+        if (!noteId || !db) return;
+        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (!noteElement) return;
+
+        const currentNote = allNotesCache.find(n => n.id === noteId);
+        if (!currentNote) return;
+
+        const title = newTitle !== null ? newTitle : currentNote.title;
+        const content = noteElement.querySelector('.note-content-editor').innerHTML;
+        
+        let textToEmbed = noteElement.querySelector('.note-content-editor').innerText.trim();
+        if (textToEmbed) {
+            textToEmbed = textToEmbed.split(/\s+/).slice(0, MAX_EMBEDDING_WORDS).join(" ");
+        }
         const embeddingData = await generateEmbedding(textToEmbed);
         const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
-        db.run("UPDATE notes SET title = ?, content = ?, embedding = ? WHERE id = ?", [title, content, embeddingBlob, state.currentNoteId]);
+        
+        db.run("UPDATE notes SET title = ?, content = ?, embedding = ? WHERE id = ?", [title, content, embeddingBlob, noteId]);
+        
+        await refreshNoteCache(); 
         await debouncedPersist();
+        
         if (embeddingBlob) await renderTsne();
+        
+        // If title changed, re-render everything to regroup notes
+        if (newTitle !== null) {
+            await renderAllNotes();
+            await selectNote(noteId); // Reselect the note in the new UI
+        }
     }
 
-    // --- Editor Logic ---
-    function format(command, value = null) { 
-        document.execCommand(command, false, value); 
-        noteContentEditor.focus(); 
-        hideAllMenus(); 
+
+    // --- Editor & Menus Logic ---
+    function format(command, value = null) {
+        document.execCommand(command, false, value);
+        const activeEditor = document.querySelector(`[data-note-id="${state.currentNoteId}"] .note-content-editor`);
+        if (activeEditor) activeEditor.focus();
+        hideAllMenus();
     }
-    function hideAllMenus() { 
-        floatingToolbar.style.display = 'none'; 
+    function hideAllMenus() {
+        floatingToolbar.style.display = 'none';
         slashCommandMenu.classList.remove('visible');
-        state.isSlashMenuActive = false;
+        titleAutosuggestMenu.classList.remove('visible');
+        state.activeMenu = null;
         state.slashCommandTriggerRange = null;
     }
-    
     function handleSelectionChange() {
         const selection = window.getSelection();
-        if (state.isSlashMenuActive) return;
-
-        if (!selection || selection.rangeCount === 0 || !noteContentEditor.contains(selection.anchorNode)) {
-            hideAllMenus();
-            return;
+        if (state.activeMenu) return; // Don't show toolbar if a menu is active
+        const activeEditor = document.querySelector(`[data-note-id="${state.currentNoteId}"] .note-content-editor`);
+        if (!selection || selection.rangeCount === 0 || !activeEditor || !activeEditor.contains(selection.anchorNode)) {
+            hideAllMenus(); return;
         }
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
         if (selection.isCollapsed || (rect.width === 0 && rect.height === 0)) {
-            hideAllMenus();
-            return;
+            hideAllMenus(); return;
         }
-        floatingToolbar.style.display = 'flex';
-        const toolbarHeight = floatingToolbar.offsetHeight, toolbarWidth = floatingToolbar.offsetWidth;
+        const toolbarHeight = floatingToolbar.offsetHeight;
         const margin = 8;
-        // CORRECTED: Used mainContent variable instead of main-content
-        let topPosition = (rect.top > toolbarHeight + margin) ? rect.top + mainContent.scrollTop - toolbarHeight - margin : rect.bottom + mainContent.scrollTop + margin;
-        const leftPosition = rect.left + (rect.width / 2) - (toolbarWidth / 2);
-        
+        let topPosition = rect.top - toolbarHeight - margin + window.scrollY;
+        if (topPosition < 0) topPosition = rect.bottom + margin + window.scrollY;
+        const leftPosition = rect.left + (rect.width / 2) - (floatingToolbar.offsetWidth / 2) + window.scrollX;
         floatingToolbar.style.top = `${topPosition}px`;
         floatingToolbar.style.left = `${leftPosition}px`;
+        floatingToolbar.style.display = 'flex';
     }
-
-    // --- Slash Command Logic ---
     function handleInput(e) {
-        debouncedPersist();
+        const target = e.target;
+        const noteElement = target.closest('[data-note-id]');
+        const noteId = noteElement ? parseInt(noteElement.dataset.noteId, 10) : null;
+
+        if (target.matches('summary[contenteditable="true"]')) {
+             clearTimeout(titleDebounceTimer);
+             const refId = parseInt(target.dataset.noteIdRef, 10);
+             const newTitle = target.textContent.trim() || 'Untitled Note';
+             updateNoteContent(refId, newTitle);
+             titleDebounceTimer = setTimeout(() => showTitleAutosuggest(target), 200);
+        } else if (target.matches('.note-content-editor')) {
+             if (noteId) updateNoteContent(noteId);
+        }
+
         const selection = window.getSelection();
         if (!selection.rangeCount) return;
-
         const range = selection.getRangeAt(0);
         const node = range.startContainer;
-
         if (node.nodeType === Node.TEXT_NODE && node.textContent.includes('/')) {
             let parentBlock = node;
-            while(parentBlock && parentBlock.nodeName !== 'DIV' && parentBlock.nodeName !== 'P') {
+            while(parentBlock && !parentBlock.classList?.contains('note-content-editor')) {
                 parentBlock = parentBlock.parentNode;
+                if (parentBlock === document.body) { parentBlock = null; break; }
             }
-            const blockText = parentBlock ? parentBlock.textContent.trim() : '';
-
+            if (!parentBlock) return;
+            const blockText = parentBlock.textContent.trim();
             if(blockText.startsWith('/')) {
-                showSlashMenu(range);
-                return;
+                showSlashMenu(range); return;
             }
-        } else if (state.isSlashMenuActive) {
+        } else if (state.activeMenu) {
              hideAllMenus();
         }
     }
+    
+    function showTitleAutosuggest(summaryElement) {
+        const query = summaryElement.textContent.trim().toLowerCase();
+        if (!query) { hideAllMenus(); return; }
 
+        const currentNoteId = parseInt(summaryElement.dataset.noteIdRef, 10);
+        const uniqueTitles = [...new Set(allNotesCache
+            .filter(note => note.id !== currentNoteId && note.title.toLowerCase().includes(query))
+            .map(note => note.title)
+        )];
+
+        if (uniqueTitles.length === 0) { hideAllMenus(); return; }
+        
+        titleAutosuggestMenu.innerHTML = uniqueTitles.map(title => `
+            <div class="popup-menu-item" data-title="${title}">
+                <span>${title}</span>
+            </div>`).join('');
+
+        const rect = summaryElement.getBoundingClientRect();
+        titleAutosuggestMenu.style.top = `${rect.bottom + window.scrollY}px`;
+        titleAutosuggestMenu.style.left = `${rect.left + window.scrollX}px`;
+        titleAutosuggestMenu.style.width = `${rect.width}px`;
+        titleAutosuggestMenu.classList.add('visible');
+        state.activeMenu = 'title';
+        titleAutosuggestMenu.querySelector('.popup-menu-item')?.classList.add('selected');
+    }
+    
     function showSlashMenu(range) {
         state.slashCommandTriggerRange = range.cloneRange();
         const rect = range.getBoundingClientRect();
-        slashCommandMenu.style.top = `${rect.bottom + mainContent.scrollTop}px`;
-        slashCommandMenu.style.left = `${rect.left + mainContent.scrollLeft}px`;
+        slashCommandMenu.style.top = `${rect.bottom + window.scrollY}px`;
+        slashCommandMenu.style.left = `${rect.left + window.scrollX}px`;
         slashCommandMenu.classList.add('visible');
-        state.isSlashMenuActive = true;
-        
-        const items = slashCommandMenu.querySelectorAll('.command-item');
+        state.activeMenu = 'slash';
+        const items = slashCommandMenu.querySelectorAll('.popup-menu-item');
         items.forEach((item, index) => {
             item.style.display = 'flex';
             item.classList.toggle('selected', index === 0);
         });
     }
-
     function handleKeyDown(e) {
-        if (!state.isSlashMenuActive) return;
-        
+        if (!state.activeMenu) return;
+
+        const menu = state.activeMenu === 'slash' ? slashCommandMenu : titleAutosuggestMenu;
         if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
-            e.preventDefault();
+             e.preventDefault();
+             e.stopPropagation();
         }
 
-        const items = Array.from(slashCommandMenu.querySelectorAll('.command-item')).filter(item => item.style.display !== 'none');
+        const items = Array.from(menu.querySelectorAll('.popup-menu-item'));
         if (items.length === 0) return;
-
         let currentIndex = items.findIndex(item => item.classList.contains('selected'));
+        if (currentIndex === -1) currentIndex = 0; // Default to first if none selected
 
         if (e.key === 'ArrowDown') {
             items[currentIndex]?.classList.remove('selected');
             const nextIndex = (currentIndex + 1) % items.length;
             items[nextIndex]?.classList.add('selected');
+            items[nextIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'ArrowUp') {
             items[currentIndex]?.classList.remove('selected');
             const prevIndex = (currentIndex - 1 + items.length) % items.length;
             items[prevIndex]?.classList.add('selected');
+            items[prevIndex]?.scrollIntoView({ block: 'nearest' });
         } else if (e.key === 'Enter') {
             const selectedItem = items[currentIndex];
-            if (selectedItem) executeSlashCommand(selectedItem);
+            if (selectedItem) {
+                if (state.activeMenu === 'slash') executeSlashCommand(selectedItem);
+                if (state.activeMenu === 'title') executeTitleSuggestion(selectedItem);
+            }
         } else if (e.key === 'Escape') {
             hideAllMenus();
         }
     }
-
     function executeSlashCommand(button) {
         if (!button) return;
         const { command, value } = button.dataset;
-        
         const sel = window.getSelection();
         const range = state.slashCommandTriggerRange;
         if (!range) return;
-
         sel.removeAllRanges();
         sel.addRange(range);
-
         let block = range.startContainer;
+        const activeEditor = document.querySelector(`[data-note-id="${state.currentNoteId}"] .note-content-editor`);
         while(block && block.nodeName !== 'DIV' && block.nodeName !== 'P'){
             block = block.parentNode;
         }
-
-        if(block && block.parentNode === noteContentEditor){
+        if(block && activeEditor && block.parentNode === activeEditor){
             block.innerHTML = '<br>';
             const newRange = document.createRange();
             newRange.setStart(block, 0);
@@ -811,10 +1023,19 @@
             sel.removeAllRanges();
             sel.addRange(newRange);
         }
-        
         format(command, value || null);
+    }
+    function executeTitleSuggestion(item) {
+        const newTitle = item.dataset.title;
+        if (!newTitle) return;
+        const summary = document.querySelector(`summary[data-note-id-ref="${state.currentNoteId}"]`);
+        if (summary) {
+            summary.textContent = newTitle;
+            updateNoteContent(state.currentNoteId, newTitle);
+        }
         hideAllMenus();
     }
+
 
     // --- Utilities (Import/Export) ---
     async function handleFileImport(event) {
@@ -837,7 +1058,6 @@
         reader.readAsArrayBuffer(file);
         event.target.value = '';
     }
-
     async function exportDatabase() {
         if (!db) { alert("Database is not ready yet."); return; }
         await persistDb();
@@ -850,112 +1070,165 @@
     }
 
     // --- Event Listeners ---
-    newNoteBtn.addEventListener('click', createNewNote);
-    deleteNoteBtn.addEventListener('click', deleteCurrentNote);
-    exportDbBtn.addEventListener('click', exportDatabase);
-    importDbBtn.addEventListener('click', () => { if (confirm('Importing a database will overwrite all your current notes. Are you sure?')) { dbFileInput.click(); } });
-    dbFileInput.addEventListener('change', handleFileImport);
-    
-    noteContentEditor.addEventListener('input', handleInput);
-    noteTitleEditor.addEventListener('input', debouncedPersist);
-    document.addEventListener('selectionchange', handleSelectionChange);
-    noteContentEditor.addEventListener('keydown', handleKeyDown);
+    function setupEventListeners() {
+        newNoteBtn.addEventListener('click', createNewNote);
+        deleteNoteBtn.addEventListener('click', deleteCurrentNote);
+        exportDbBtn.addEventListener('click', exportDatabase);
+        importDbBtn.addEventListener('click', () => { if (confirm('Importing a database will overwrite all your current notes. Are you sure?')) { dbFileInput.click(); } });
+        dbFileInput.addEventListener('change', handleFileImport);
+        
+        notesContainer.addEventListener('input', handleInput);
+        notesContainer.addEventListener('keydown', handleKeyDown, true);
+        
+        document.addEventListener('selectionchange', handleSelectionChange);
 
-    slashCommandMenu.addEventListener('click', e => {
-        const button = e.target.closest('.command-item');
-        if (button) executeSlashCommand(button);
-    });
-    
-    floatingToolbar.addEventListener('mousedown', e => {
-        e.preventDefault();
-        const button = e.target.closest('button.format-btn');
-        if (!button) return;
-        if (button.id === 'createLinkBtn') {
-            const url = prompt('Enter URL for the link:');
-            if (url) format('createLink', url);
-        } else {
-            format(button.dataset.command, button.dataset.value);
-        }
-    });
+        notesContainer.addEventListener('click', (event) => {
+            const noteElement = event.target.closest('[data-note-id]');
+            if (noteElement) {
+                const noteId = parseInt(noteElement.dataset.noteId, 10);
+                if (state.currentNoteId !== noteId) selectNote(noteId);
+            }
+        });
+        
+        const handleMenuClick = (menu, action) => {
+            menu.addEventListener('click', e => {
+                const item = e.target.closest('.popup-menu-item');
+                if (item) action(item);
+            });
+        };
+        handleMenuClick(slashCommandMenu, executeSlashCommand);
+        handleMenuClick(titleAutosuggestMenu, executeTitleSuggestion);
 
-    searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchDebounceTimer);
-        const query = e.target.value.trim();
-        clearSearchBtn.style.display = query ? 'block' : 'none';
-        searchDebounceTimer = setTimeout(() => performSearch(query), 300);
-    });
-    clearSearchBtn.addEventListener('click', () => {
-        searchInput.value = '';
-        searchInput.dispatchEvent(new Event('input'));
-    });
-    searchResultsContainer.addEventListener('click', (e) => {
-        const item = e.target.closest('.search-result-item');
-        if (item && item.dataset.noteId) {
-            selectNote(item.dataset.noteId);
-        }
-    });
-    
-    settingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        settingsMenu.classList.toggle('visible');
-    });
-    window.addEventListener('click', (e) => {
-        if(!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)){
-            settingsMenu.classList.remove('visible');
-        }
-        if (!slashCommandMenu.contains(e.target) && !noteContentEditor.contains(e.target)) {
-            hideAllMenus();
-        }
-    });
-    
+        floatingToolbar.addEventListener('mousedown', e => {
+            e.preventDefault();
+            const button = e.target.closest('button.format-btn');
+            if (!button) return;
+            if (button.id === 'createLinkBtn') {
+                const url = prompt('Enter URL for the link:');
+                if (url) format('createLink', url);
+            } else {
+                format(button.dataset.command, button.dataset.value);
+            }
+        });
+
+        searchInput.addEventListener('focus', () => tsneContainer.classList.add('expanded'));
+        searchInput.addEventListener('blur', () => { if (searchInput.value.trim() === '') tsneContainer.classList.remove('expanded'); });
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchDebounceTimer);
+            const query = e.target.value.trim();
+            clearSearchBtn.style.display = query ? 'block' : 'none';
+            if (query) tsneContainer.classList.add('expanded');
+            else if (document.activeElement !== searchInput) tsneContainer.classList.remove('expanded');
+            searchDebounceTimer = setTimeout(() => performSearch(query), 300);
+        });
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            searchInput.dispatchEvent(new Event('input'));
+            if (document.activeElement !== searchInput) tsneContainer.classList.remove('expanded');
+        });
+        
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsMenu.classList.toggle('visible');
+        });
+        window.addEventListener('click', (e) => {
+            if(!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) settingsMenu.classList.remove('visible');
+            if(state.activeMenu) {
+                const activeMenuEl = state.activeMenu === 'slash' ? slashCommandMenu : titleAutosuggestMenu;
+                if(!activeMenuEl.contains(e.target) && !notesContainer.contains(e.target)){
+                    hideAllMenus();
+                }
+            }
+        });
+
+        document.getElementById('theme-select').addEventListener('change', (e) => {
+            const newTheme = e.target.value;
+            localStorage.setItem(THEME_STORAGE_KEY, newTheme);
+            state.settings.theme = newTheme;
+            applyTheme();
+        });
+        document.getElementById('model-select').addEventListener('change', (e) => {
+            const newModel = e.target.value;
+            if (newModel !== state.settings.model) {
+                if (confirm('Changing the AI model requires re-calculating all note embeddings and will reload the page. Are you sure?')) {
+                    localStorage.setItem(MODEL_STORAGE_KEY, newModel);
+                    window.location.reload();
+                } else {
+                    e.target.value = state.settings.model;
+                }
+            }
+        });
+    }
+
     // --- App Initialization ---
     async function initialize() {
+        loadSettings();
+        applyTheme();
+        populateSettingsUI();
+        setupEventListeners();
+
         mainNetworkGraph.textContent = 'Loading AI model...';
         const sqlJsReady = initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
-        
+
         try {
-            embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
+            embedder = await pipeline('feature-extraction', state.settings.model, {
                 quantized: true,
                 progress_callback: data => { if (data.status === 'progress') mainNetworkGraph.textContent = `Loading model: ${(data.progress).toFixed(1)}%`; }
             });
             searchInput.disabled = false;
-            
+
             SQL = await sqlJsReady;
             const dbFile = await idb.get();
             db = dbFile ? new SQL.Database(dbFile) : new SQL.Database();
+
+            db.run("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT, embedding BLOB, created_at INTEGER);");
+            db.run("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);");
             
             const tableInfoRes = db.exec("PRAGMA table_info(notes);");
-            if (tableInfoRes.length === 0) {
-                db.run("CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT, embedding BLOB);");
-            } else {
-                const hasEmbeddingCol = tableInfoRes[0].values.some(col => col[1] === 'embedding');
-                if (!hasEmbeddingCol) { 
-                    db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;"); 
-                }
+            const columns = tableInfoRes[0].values.map(col => col[1]);
+            if (!columns.includes('embedding')) db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;");
+            if (!columns.includes('created_at')) {
+                db.run("ALTER TABLE notes ADD COLUMN created_at INTEGER;");
+                db.run("UPDATE notes SET created_at = id WHERE created_at IS NULL;");
             }
             
+            const storedModelRes = db.exec("SELECT value FROM meta WHERE key = 'embedding_model'");
+            const storedModel = storedModelRes.length > 0 && storedModelRes[0].values.length > 0 ? storedModelRes[0].values[0][0] : null;
+
+            if (storedModel !== state.settings.model) {
+                mainNetworkGraph.textContent = 'Model changed. Clearing old embeddings...';
+                db.run("UPDATE notes SET embedding = NULL;");
+                db.run("INSERT OR REPLACE INTO meta (key, value) VALUES ('embedding_model', ?)", [state.settings.model]);
+                await persistDb();
+            }
+
             mainNetworkGraph.textContent = 'Backfilling embeddings...';
             const notesToBackfillRes = db.exec("SELECT id, content FROM notes WHERE embedding IS NULL");
             if (notesToBackfillRes.length > 0 && notesToBackfillRes[0].values.length > 0) {
                 for (const row of notesToBackfillRes[0].values) {
                     const [id, content] = row;
-                    const tempDiv = document.createElement('div'); tempDiv.innerHTML = content;
-                    const embeddingData = await generateEmbedding(tempDiv.innerText);
+                    const tempDiv = document.createElement('div'); tempDiv.innerHTML = content || '';
+                    let textToEmbed = tempDiv.innerText.trim();
+                    if (textToEmbed) {
+                       textToEmbed = textToEmbed.split(/\s+/).slice(0, MAX_EMBEDDING_WORDS).join(" ");
+                    }
+                    const embeddingData = await generateEmbedding(textToEmbed);
                     const embeddingBlob = embeddingData ? new Uint8Array(embeddingData.buffer) : null;
                     if(embeddingBlob) db.run("UPDATE notes SET embedding = ? WHERE id = ?", [embeddingBlob, id]);
                 }
                 await persistDb();
             }
-            
+
             mainNetworkGraph.textContent = 'Initializing visualization...';
-            const notes = await getAllNotes();
-            
-            if (notes.length === 0) { 
-                await createNewNote(); 
+            await refreshNoteCache();
+            await renderAllNotes();
+
+            if (allNotesCache.length === 0) {
+                await createNewNote();
             } else {
                 const lastNoteId = localStorage.getItem('inspired-notes-app-last-note');
-                const noteExists = lastNoteId && notes.some(n => n.id == lastNoteId);
-                await selectNote(noteExists ? lastNoteId : notes[0].id);
+                const noteExists = lastNoteId && allNotesCache.some(n => n.id == lastNoteId);
+                await selectNote(noteExists ? lastNoteId : allNotesCache[0].id);
             }
             await renderTsne();
 
@@ -964,7 +1237,7 @@
             mainNetworkGraph.textContent = 'Error during initialization. Check console for details.';
         }
     }
-    
+
     initialize();
 </script>
 </body>
