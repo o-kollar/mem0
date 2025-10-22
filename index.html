@@ -4,8 +4,8 @@
   <meta charset="UTF--8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>mem0</title>
-  <!-- Google Material Symbols -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <!-- Google Material Symbols (Optimized for faster rendering) -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
   <style>
     :root {
       --bg-color: #F8F9FA;
@@ -87,25 +87,51 @@
 
     #search-container {
         position: absolute;
-        top: 20px; left: 50%;
-        transform: translateX(-50%);
+        top: 50%; left: 50%;
+        transform: translate(-50%, -50%);
         z-index: 10;
         width: 80%; max-width: 450px;
+        display: flex;
+        align-items: center;
+        border-radius: 25px;
+        transition: all 0.4s ease-in-out;
+        background-color: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    #top-network-container.expanded #search-container {
+        top: 20px;
+        transform: translateX(-50%);
         background-color: rgba(255, 255, 255, 0.65);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border-radius: 25px;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         border: 1px solid rgba(255, 255, 255, 0.2);
-        display: flex;
-        align-items: center;
     }
     #search-input {
         flex-grow: 1; width: 100%; padding: 10px 20px;
         border: none; background-color: transparent; font-size: 16px;
-        outline: none; color: #333;
+        outline: none; color: var(--text-color);
+        transition: all 0.4s ease-in-out;
+        text-align: center;
     }
-    #search-input::placeholder { color: #666; }
+     #top-network-container.expanded #search-input {
+        text-align: left;
+    }
+    #search-input::placeholder {
+        transition: all 0.4s ease-in-out;
+        color: var(--text-color);
+        opacity: 0.8;
+        font-weight: 500;
+        font-size: 18px;
+    }
+    #top-network-container.expanded #search-input::placeholder {
+      color: #666;
+      font-weight: normal;
+      font-size: 16px;
+    }
     #clear-search-btn {
         background: none; border: none; cursor: pointer; display: none;
         padding: 8px; margin-right: 8px; color: #555;
@@ -232,9 +258,30 @@
         border-bottom: 1px solid var(--border-color);
         margin: 12px 24px 12px;
         transition: color 0.3s, border-color 0.3s;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
      .grouped-note-card .note-body-wrapper:first-of-type .note-meta {
         margin-top: -8px;
+    }
+    .extend-note-btn {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--secondary-text-color);
+        padding: 4px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .extend-note-btn:hover {
+        background-color: var(--hover-bg);
+        color: var(--text-color);
+    }
+    .extend-note-btn .material-symbols-outlined {
+        font-size: 18px;
     }
     
     .note-content-editor {
@@ -307,8 +354,12 @@
       #top-network-container.expanded {
         height: 220px;
       }
-      #search-container { width: 95%; top: 15px; }
+      #top-network-container.expanded #search-container {
+        top: 15px;
+      }
       #search-input { font-size: 14px; padding: 8px 15px; }
+      #search-input::placeholder { font-size: 16px; }
+      #top-network-container.expanded #search-input::placeholder { font-size: 14px; }
       .note-card summary { font-size: 1.2em; padding: 12px 16px; }
       .note-meta { padding: 0 16px 8px; margin: -4px 16px 8px; }
       .note-content-editor { padding: 8px 16px 16px; }
@@ -325,7 +376,7 @@
       <div id="header-sticky-wrapper">
         <div id="top-network-container">
           <div id="search-container">
-              <input type="search" id="search-input" placeholder="Search & filter notes..." disabled>
+              <input type="search" id="search-input" placeholder="Search the note network..." disabled>
               <button id="clear-search-btn" title="Clear search">
                   <span class="material-symbols-outlined">close</span>
               </button>
@@ -388,8 +439,6 @@
         </div>
       </div>
       
-      <div id="title-autosuggest-menu" class="popup-menu"></div>
-
       <input type="file" id="db-file-input" accept=".sqlite,.db" style="display: none;">
 
       <div id="notes-container"></div>
@@ -398,12 +447,12 @@
   </main>
 </div>
 
-<!-- Scripts -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-<script src="https://cdn.jsdelivr.net/gh/karpathy/tsnejs/tsne.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- Scripts are moved to the end and deferred for non-blocking rendering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/karpathy/tsnejs/tsne.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts" defer></script>
 
 <!-- App Logic -->
 <script type="module">
@@ -424,7 +473,6 @@
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsMenu = document.getElementById('settings-menu');
     const slashCommandMenu = document.getElementById('slash-command-menu');
-    const titleAutosuggestMenu = document.getElementById('title-autosuggest-menu');
 
     // --- Config & Constants ---
     const AVAILABLE_MODELS = {
@@ -446,11 +494,11 @@
         currentNoteId: null,
         searchResults: new Map(),
         searchScoreRange: null,
-        activeMenu: null, // 'slash', 'title', null
+        activeMenu: null, // 'slash', null
         slashCommandTriggerRange: null,
         settings: { model: DEFAULT_MODEL, theme: 'light' }
     };
-    let debounceTimer, searchDebounceTimer, titleDebounceTimer;
+    let debounceTimer, searchDebounceTimer;
     let embedder = null;
 
     // --- T-SNE & 3D Visualization State ---
@@ -494,6 +542,35 @@
         await idb.set(data);
     }
     const debouncedPersist = () => { clearTimeout(debounceTimer); debounceTimer = setTimeout(persistDb, 500); };
+
+    // --- Editor Utilities ---
+    function saveSelection(element) {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0 && element.contains(selection.anchorNode)) {
+            const range = selection.getRangeAt(0);
+            if (range.startContainer.parentNode === element || range.startContainer === element) {
+                 return { start: range.startOffset, end: range.endOffset };
+            }
+        }
+        return null;
+    }
+
+    function restoreSelection(element, savedSelection) {
+        if (!savedSelection) return;
+        element.focus();
+        const textNode = element.firstChild;
+        if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+            const range = document.createRange();
+            const start = Math.min(savedSelection.start, textNode.length);
+            const end = Math.min(savedSelection.end, textNode.length);
+            range.setStart(textNode, start);
+            range.setEnd(textNode, end);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    }
+
 
     // --- Settings & Theme ---
     function loadSettings() {
@@ -736,12 +813,17 @@
         });
     }
 
-    function renderNoteBody(note) {
+    function renderNoteBody(note, isLast = true) {
         const formattedDate = new Date(note.created_at || note.id).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
         return `
             <div class="note-body-wrapper" data-note-id="${note.id}">
                 <div class="note-meta">
                     <span>${formattedDate}</span>
+                    ${isLast ? `
+                    <button class="extend-note-btn" title="Extend this note with a new section">
+                        <span class="material-symbols-outlined">add_notes</span>
+                    </button>
+                    ` : ''}
                 </div>
                 <div class="note-content-editor" contenteditable="true" data-placeholder="Start writing here...">${note.content || ''}</div>
             </div>
@@ -766,10 +848,12 @@
                     </details>
                 `;
             } else {
+                // Sort by date to ensure the chronological last is at the bottom
+                notes.sort((a, b) => a.created_at - b.created_at);
                 return `
                     <details class="note-card grouped-note-card" open>
                         <summary contenteditable="false">${notes[0].title || 'Untitled Note'}</summary>
-                        ${notes.map(renderNoteBody).join('')}
+                        ${notes.map((note, index, arr) => renderNoteBody(note, index === arr.length - 1)).join('')}
                     </details>
                 `;
             }
@@ -809,6 +893,30 @@
              document.execCommand('selectAll', false, null);
         }
     }
+    async function extendNote(sourceNoteId) {
+        const sourceNote = allNotesCache.find(n => n.id === sourceNoteId);
+        if (!sourceNote) {
+            console.error("Source note for extension not found.");
+            return;
+        }
+
+        const newId = new Date().getTime();
+        const title = sourceNote.title; // Use the same title
+        const content = '<p><br></p>'; // Start with blank content
+
+        db.run("INSERT INTO notes (id, title, content, created_at) VALUES (?, ?, ?, ?)", [newId, title, content, newId]);
+
+        await persistDb();
+        await refreshNoteCache();
+        await renderAllNotes();
+        await renderTsne();
+
+        await selectNote(newId);
+        const newNoteElement = document.querySelector(`[data-note-id="${newId}"] .note-content-editor`);
+        if (newNoteElement) {
+            newNoteElement.focus();
+        }
+    }
     async function deleteCurrentNote() {
         if (!state.currentNoteId) return;
         if (confirm('Are you sure you want to delete this note?')) {
@@ -821,18 +929,29 @@
             if (nextNoteId) {
                 await selectNote(nextNoteId);
             } else {
-                // No notes left, maybe clear the view or create a new one
                 notesContainer.innerHTML = '';
             }
         }
     }
     async function updateNoteContent(noteId, newTitle = null) {
-        if (!noteId || !db) return;
-        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
-        if (!noteElement) return;
-
+        if (!noteId || !db) return false;
+        
         const currentNote = allNotesCache.find(n => n.id === noteId);
-        if (!currentNote) return;
+        if (!currentNote) return false;
+
+        let needsReRender = false;
+        if (newTitle !== null && newTitle !== currentNote.title) {
+            const oldTitle = currentNote.title;
+            const notesWithOldTitle = allNotesCache.filter(n => n.title === oldTitle).length;
+            const notesWithNewTitle = allNotesCache.filter(n => n.title === newTitle).length;
+
+            if (notesWithOldTitle > 1 || notesWithNewTitle > 0) {
+                needsReRender = true;
+            }
+        }
+
+        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (!noteElement) return false; // Should exist unless UI is out of sync
 
         const title = newTitle !== null ? newTitle : currentNote.title;
         const content = noteElement.querySelector('.note-content-editor').innerHTML;
@@ -851,11 +970,12 @@
         
         if (embeddingBlob) await renderTsne();
         
-        // If title changed, re-render everything to regroup notes
-        if (newTitle !== null) {
+        if (needsReRender) {
             await renderAllNotes();
-            await selectNote(noteId); // Reselect the note in the new UI
+            await selectNote(noteId);
+            return true;
         }
+        return false;
     }
 
 
@@ -869,13 +989,12 @@
     function hideAllMenus() {
         floatingToolbar.style.display = 'none';
         slashCommandMenu.classList.remove('visible');
-        titleAutosuggestMenu.classList.remove('visible');
         state.activeMenu = null;
         state.slashCommandTriggerRange = null;
     }
     function handleSelectionChange() {
         const selection = window.getSelection();
-        if (state.activeMenu) return; // Don't show toolbar if a menu is active
+        if (state.activeMenu) return; 
         const activeEditor = document.querySelector(`[data-note-id="${state.currentNoteId}"] .note-content-editor`);
         if (!selection || selection.rangeCount === 0 || !activeEditor || !activeEditor.contains(selection.anchorNode)) {
             hideAllMenus(); return;
@@ -894,19 +1013,28 @@
         floatingToolbar.style.left = `${leftPosition}px`;
         floatingToolbar.style.display = 'flex';
     }
-    function handleInput(e) {
+    async function handleInput(e) {
         const target = e.target;
-        const noteElement = target.closest('[data-note-id]');
-        const noteId = noteElement ? parseInt(noteElement.dataset.noteId, 10) : null;
-
+        
         if (target.matches('summary[contenteditable="true"]')) {
-             clearTimeout(titleDebounceTimer);
-             const refId = parseInt(target.dataset.noteIdRef, 10);
-             const newTitle = target.textContent.trim() || 'Untitled Note';
-             updateNoteContent(refId, newTitle);
-             titleDebounceTimer = setTimeout(() => showTitleAutosuggest(target), 200);
+            const refId = parseInt(target.dataset.noteIdRef, 10);
+            if (!refId) return;
+
+            const selection = saveSelection(target);
+            const newTitle = target.textContent.trim() || 'Untitled Note';
+            
+            const didReRender = await updateNoteContent(refId, newTitle);
+            
+            if (didReRender) {
+                const newSummaryEl = document.querySelector(`summary[data-note-id-ref="${refId}"]`);
+                if (newSummaryEl && selection) {
+                    restoreSelection(newSummaryEl, selection);
+                }
+            }
         } else if (target.matches('.note-content-editor')) {
-             if (noteId) updateNoteContent(noteId);
+            const noteElement = target.closest('[data-note-id]');
+            const noteId = noteElement ? parseInt(noteElement.dataset.noteId, 10) : null;
+            if (noteId) await updateNoteContent(noteId);
         }
 
         const selection = window.getSelection();
@@ -929,32 +1057,6 @@
         }
     }
     
-    function showTitleAutosuggest(summaryElement) {
-        const query = summaryElement.textContent.trim().toLowerCase();
-        if (!query) { hideAllMenus(); return; }
-
-        const currentNoteId = parseInt(summaryElement.dataset.noteIdRef, 10);
-        const uniqueTitles = [...new Set(allNotesCache
-            .filter(note => note.id !== currentNoteId && note.title.toLowerCase().includes(query))
-            .map(note => note.title)
-        )];
-
-        if (uniqueTitles.length === 0) { hideAllMenus(); return; }
-        
-        titleAutosuggestMenu.innerHTML = uniqueTitles.map(title => `
-            <div class="popup-menu-item" data-title="${title}">
-                <span>${title}</span>
-            </div>`).join('');
-
-        const rect = summaryElement.getBoundingClientRect();
-        titleAutosuggestMenu.style.top = `${rect.bottom + window.scrollY}px`;
-        titleAutosuggestMenu.style.left = `${rect.left + window.scrollX}px`;
-        titleAutosuggestMenu.style.width = `${rect.width}px`;
-        titleAutosuggestMenu.classList.add('visible');
-        state.activeMenu = 'title';
-        titleAutosuggestMenu.querySelector('.popup-menu-item')?.classList.add('selected');
-    }
-    
     function showSlashMenu(range) {
         state.slashCommandTriggerRange = range.cloneRange();
         const rect = range.getBoundingClientRect();
@@ -971,7 +1073,7 @@
     function handleKeyDown(e) {
         if (!state.activeMenu) return;
 
-        const menu = state.activeMenu === 'slash' ? slashCommandMenu : titleAutosuggestMenu;
+        const menu = slashCommandMenu;
         if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key)) {
              e.preventDefault();
              e.stopPropagation();
@@ -980,7 +1082,7 @@
         const items = Array.from(menu.querySelectorAll('.popup-menu-item'));
         if (items.length === 0) return;
         let currentIndex = items.findIndex(item => item.classList.contains('selected'));
-        if (currentIndex === -1) currentIndex = 0; // Default to first if none selected
+        if (currentIndex === -1) currentIndex = 0; 
 
         if (e.key === 'ArrowDown') {
             items[currentIndex]?.classList.remove('selected');
@@ -996,7 +1098,6 @@
             const selectedItem = items[currentIndex];
             if (selectedItem) {
                 if (state.activeMenu === 'slash') executeSlashCommand(selectedItem);
-                if (state.activeMenu === 'title') executeTitleSuggestion(selectedItem);
             }
         } else if (e.key === 'Escape') {
             hideAllMenus();
@@ -1025,17 +1126,6 @@
         }
         format(command, value || null);
     }
-    function executeTitleSuggestion(item) {
-        const newTitle = item.dataset.title;
-        if (!newTitle) return;
-        const summary = document.querySelector(`summary[data-note-id-ref="${state.currentNoteId}"]`);
-        if (summary) {
-            summary.textContent = newTitle;
-            updateNoteContent(state.currentNoteId, newTitle);
-        }
-        hideAllMenus();
-    }
-
 
     // --- Utilities (Import/Export) ---
     async function handleFileImport(event) {
@@ -1083,6 +1173,17 @@
         document.addEventListener('selectionchange', handleSelectionChange);
 
         notesContainer.addEventListener('click', (event) => {
+            const extendBtn = event.target.closest('.extend-note-btn');
+            if (extendBtn) {
+                event.preventDefault();
+                const noteBody = extendBtn.closest('[data-note-id]');
+                if (noteBody) {
+                    const noteId = parseInt(noteBody.dataset.noteId, 10);
+                    extendNote(noteId);
+                }
+                return;
+            }
+
             const noteElement = event.target.closest('[data-note-id]');
             if (noteElement) {
                 const noteId = parseInt(noteElement.dataset.noteId, 10);
@@ -1090,14 +1191,10 @@
             }
         });
         
-        const handleMenuClick = (menu, action) => {
-            menu.addEventListener('click', e => {
-                const item = e.target.closest('.popup-menu-item');
-                if (item) action(item);
-            });
-        };
-        handleMenuClick(slashCommandMenu, executeSlashCommand);
-        handleMenuClick(titleAutosuggestMenu, executeTitleSuggestion);
+        slashCommandMenu.addEventListener('click', e => {
+            const item = e.target.closest('.popup-menu-item');
+            if (item) executeSlashCommand(item);
+        });
 
         floatingToolbar.addEventListener('mousedown', e => {
             e.preventDefault();
@@ -1134,7 +1231,7 @@
         window.addEventListener('click', (e) => {
             if(!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) settingsMenu.classList.remove('visible');
             if(state.activeMenu) {
-                const activeMenuEl = state.activeMenu === 'slash' ? slashCommandMenu : titleAutosuggestMenu;
+                const activeMenuEl = slashCommandMenu;
                 if(!activeMenuEl.contains(e.target) && !notesContainer.contains(e.target)){
                     hideAllMenus();
                 }
@@ -1161,36 +1258,17 @@
     }
 
     // --- App Initialization ---
-    async function initialize() {
-        loadSettings();
-        applyTheme();
-        populateSettingsUI();
-        setupEventListeners();
-
-        mainNetworkGraph.textContent = 'Loading AI model...';
-        const sqlJsReady = initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
-
+    
+    // This new function handles the slow, non-essential startup tasks
+    async function initializeHeavyTasks() {
         try {
+            mainNetworkGraph.textContent = 'Loading AI model...';
             embedder = await pipeline('feature-extraction', state.settings.model, {
                 quantized: true,
                 progress_callback: data => { if (data.status === 'progress') mainNetworkGraph.textContent = `Loading model: ${(data.progress).toFixed(1)}%`; }
             });
             searchInput.disabled = false;
-
-            SQL = await sqlJsReady;
-            const dbFile = await idb.get();
-            db = dbFile ? new SQL.Database(dbFile) : new SQL.Database();
-
-            db.run("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT, embedding BLOB, created_at INTEGER);");
-            db.run("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);");
-            
-            const tableInfoRes = db.exec("PRAGMA table_info(notes);");
-            const columns = tableInfoRes[0].values.map(col => col[1]);
-            if (!columns.includes('embedding')) db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;");
-            if (!columns.includes('created_at')) {
-                db.run("ALTER TABLE notes ADD COLUMN created_at INTEGER;");
-                db.run("UPDATE notes SET created_at = id WHERE created_at IS NULL;");
-            }
+            searchInput.placeholder = "Search the note network...";
             
             const storedModelRes = db.exec("SELECT value FROM meta WHERE key = 'embedding_model'");
             const storedModel = storedModelRes.length > 0 && storedModelRes[0].values.length > 0 ? storedModelRes[0].values[0][0] : null;
@@ -1217,11 +1295,47 @@
                     if(embeddingBlob) db.run("UPDATE notes SET embedding = ? WHERE id = ?", [embeddingBlob, id]);
                 }
                 await persistDb();
+                await refreshNoteCache(); // Refresh cache after backfill
             }
-
+            
             mainNetworkGraph.textContent = 'Initializing visualization...';
+            await renderTsne();
+
+        } catch(err) {
+            console.error("Failed to initialize heavy tasks:", err);
+            mainNetworkGraph.textContent = 'Error during AI initialization.';
+        }
+    }
+    
+    // The main initialization function now prioritizes rendering notes first.
+    async function initialize() {
+        loadSettings();
+        applyTheme();
+        populateSettingsUI();
+        setupEventListeners();
+
+        mainNetworkGraph.textContent = 'Loading note database...';
+        
+        try {
+            const sqlJsReady = initSqlJs({ locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${file}` });
+            SQL = await sqlJsReady;
+            const dbFile = await idb.get();
+            db = dbFile ? new SQL.Database(dbFile) : new SQL.Database();
+            
+            db.run("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY, title TEXT, content TEXT, embedding BLOB, created_at INTEGER);");
+            db.run("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);");
+            
+            const tableInfoRes = db.exec("PRAGMA table_info(notes);");
+            const columns = tableInfoRes[0].values.map(col => col[1]);
+            if (!columns.includes('embedding')) db.run("ALTER TABLE notes ADD COLUMN embedding BLOB;");
+            if (!columns.includes('created_at')) {
+                db.run("ALTER TABLE notes ADD COLUMN created_at INTEGER;");
+                db.run("UPDATE notes SET created_at = id WHERE created_at IS NULL;");
+            }
+            
             await refreshNoteCache();
             await renderAllNotes();
+            mainNetworkGraph.textContent = 'Loading note network...';
 
             if (allNotesCache.length === 0) {
                 await createNewNote();
@@ -1230,7 +1344,9 @@
                 const noteExists = lastNoteId && allNotesCache.some(n => n.id == lastNoteId);
                 await selectNote(noteExists ? lastNoteId : allNotesCache[0].id);
             }
-            await renderTsne();
+            
+            // Defer the heavy lifting until after the first render
+            setTimeout(initializeHeavyTasks, 100);
 
         } catch(err) {
             console.error("Failed to initialize:", err);
