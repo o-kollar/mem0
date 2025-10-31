@@ -46,6 +46,17 @@
       justify-content: center;
       position: relative;
     }
+    #header-sticky-wrapper {
+        position: -webkit-sticky;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background-color: var(--bg-color);
+        padding-top: 20px;
+        padding-bottom: 10px;
+        margin-top: -20px;
+        transition: all 0.3s;
+    }
     .container { width: 100%; max-width: 720px; position: relative; }
 
     #header-sticky-wrapper {
@@ -364,6 +375,18 @@
       .note-meta { padding: 0 16px 8px; margin: -4px 16px 8px; }
       .note-content-editor { padding: 8px 16px 16px; }
     }
+#header-sticky-wrapper.scrolled {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 0;
+    background-color: rgba(248, 249, 250, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+[data-theme="dark"] #header-sticky-wrapper.scrolled {
+    background-color: rgba(28, 28, 28, 0.85);
+}
   </style>
 </head>
 <body id="app-body">
@@ -1253,6 +1276,15 @@
                 } else {
                     e.target.value = state.settings.model;
                 }
+            }
+        });
+
+        const headerWrapper = document.getElementById('header-sticky-wrapper');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 20) {
+                headerWrapper.classList.add('scrolled');
+            } else {
+                headerWrapper.classList.remove('scrolled');
             }
         });
     }
